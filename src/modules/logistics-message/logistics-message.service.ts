@@ -170,7 +170,9 @@ Message ID: ${tgMessageId}
 ${postLink}
 `;
 
-        await this.telegramService.sendToGroup(incompleteMessageText);
+        await this.telegramService.sendToGroup(incompleteMessageText, 26, {
+          parseMode: 'Markdown',
+        });
       }
       this.logger.debug(
         `Method: ${methodName} - Saved DB Record: ${savedMessage.id}`
