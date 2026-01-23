@@ -143,7 +143,7 @@ export class PostsService {
       });
 
       if (!isComplete && openaiResponse.classifieredMessage.isLoad) {
-        const postLink = `http://192.168.31.81:5000/v1/post/${savedMessage.id}`;
+        const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
         const incompleteMessageText = `
 ⚠️ *Ma'lumot to‘liq aniqlanmadi*
