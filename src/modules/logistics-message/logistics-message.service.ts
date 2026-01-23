@@ -146,19 +146,49 @@ export class PostsService {
         const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
         const incompleteMessageText = `
-📦 *Xabar:*
+📦 *Xabar (Telegramdan kelgan):*
 \`\`\`
 ${text}
 \`\`\`
 
-📍 *Aniqlangan yo‘nalish:*
+
+\`\`\`
+📍 *Aniqlangan ma'lumotlar:*
 • From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
 • From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
 • To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
 • To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
+• title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
+• weight: ${
+          openaiResponse?.metaData?.weight != null &&
+          !isNaN(Number(openaiResponse.metaData.weight))
+            ? `${Number(openaiResponse.metaData.weight)}`
+            : '❌ yo‘q'
+        }
+• cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
+• vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
+• paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
+• paymentAmount: ${
+          openaiResponse?.metaData?.paymentAmount != null &&
+          !isNaN(Number(openaiResponse.metaData.paymentAmount))
+            ? Number(openaiResponse.metaData.paymentAmount)
+            : '❌ yo‘q'
+        }
+• advancePayment: ${
+          openaiResponse?.metaData?.advancePayment != null &&
+          !isNaN(Number(openaiResponse.metaData.advancePayment))
+            ? Number(openaiResponse.metaData.advancePayment)
+            : '❌ yo‘q'
+        }
+• paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
+• pickupDate: ${
+          openaiResponse?.metaData?.pickupDate
+            ? openaiResponse.metaData.pickupDate
+            : '❌ yo‘q'
+        }
+• phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
 
-🔗 *To‘liq ko‘rish:*
-${postLink}
+\`\`\`
 `;
 
         await this.telegramService.sendToGroup(incompleteMessageText, 26, {
