@@ -145,26 +145,17 @@ export class PostsService {
       if (!isComplete && openaiResponse.classifieredMessage.isLoad) {
         const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
-        const quotedText = text
-          ? text
-              .split('\n')
-              .map((line) => `> ${line}`)
-              .join('\n')
-          : '> ❌ Xabar matni yo‘q';
-
         const incompleteMessageText = `
 📦 *Xabar:*
-${quotedText}
+\`\`\`
+${text}
+\`\`\`
 
 📍 *Aniqlangan yo‘nalish:*
 • From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
 • From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
 • To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
 • To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
-
-📡 *Manba:*
-Channel: ${channelName}
-Message ID: ${tgMessageId}
 
 🔗 *To‘liq ko‘rish:*
 ${postLink}
