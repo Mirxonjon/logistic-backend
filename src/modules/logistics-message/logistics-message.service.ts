@@ -146,14 +146,13 @@ export class PostsService {
         const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
         const incompleteMessageText = `
-📦 *Xabar (Telegramdan kelgan):*
+*Asl xabar:*
 \`\`\`
 ${text}
 \`\`\`
 
-
+*Aniqlangan ma'lumotlar:*
 \`\`\`
-📍 *Aniqlangan ma'lumotlar:*
 • From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
 • From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
 • To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
