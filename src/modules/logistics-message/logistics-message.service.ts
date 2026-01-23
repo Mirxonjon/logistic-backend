@@ -145,11 +145,16 @@ export class PostsService {
       if (!isComplete && openaiResponse.classifieredMessage.isLoad) {
         const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
-        const incompleteMessageText = `
-⚠️ *Ma'lumot to‘liq aniqlanmadi*
+        const quotedText = text
+          ? text
+              .split('\n')
+              .map((line) => `> ${line}`)
+              .join('\n')
+          : '> ❌ Xabar matni yo‘q';
 
-🧠 *GPT analiz qilgan xabar:*
-"${text}"
+        const incompleteMessageText = `
+📦 *Xabar:*
+${quotedText}
 
 📍 *Aniqlangan yo‘nalish:*
 • From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
@@ -164,6 +169,7 @@ Message ID: ${tgMessageId}
 🔗 *To‘liq ko‘rish:*
 ${postLink}
 `;
+
         await this.telegramService.sendToGroup(incompleteMessageText);
       }
       this.logger.debug(
