@@ -87,4 +87,10 @@ export class GetLogisticsMessagesDto {
   @Type(() => Number)
   @IsNumber()
   limit?: number = 20;
+
+  @ApiPropertyOptional({ example: 2000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  interval?: number;
 }

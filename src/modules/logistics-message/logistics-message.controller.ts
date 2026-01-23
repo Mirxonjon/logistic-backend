@@ -12,6 +12,7 @@ import {
   Put,
   Req,
   NotFoundException,
+  Sse,
 } from '@nestjs/common';
 import { PostsService } from './logistics-message.service';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
@@ -21,6 +22,7 @@ import {
   UpdateLogisticMessageDto,
 } from '@/types/application';
 import { query } from 'express';
+import { Observable, from, interval, map, switchMap } from 'rxjs';
 
 @ApiBearerAuth()
 @ApiTags('Posts')
@@ -42,6 +44,21 @@ export class PostsController {
     console.log(query, 'query');
 
     return this.logisticMessageService.getAllMessages(query);
+  }
+
+  @Sse('all/sse')
+  getAllMessagesSse(
+    @Query() query: GetLogisticsMessagesDto 
+  ) {
+    const intervalMs =
+      query.interval && query.interval >= 1000 ? query.interval : 5000; // default
+
+    console.log(query, 'query');
+
+    return interval(intervalMs).pipe(
+      switchMap(() => from(this.logisticMessageService.getAllMessages(query))),
+      map((data) => ({ data }))
+    );
   }
 
   @Get(':id')

@@ -209,10 +209,10 @@ ${text}
     // =====================
     // PAGINATION DEFAULTS
     // =====================
-    const page = params?.page && params.page > 0 ? params.page : 1;
+    const page = +params?.page && +params.page > 0 ? +params.page : 1;
     const limit =
-      params?.limit && params.limit > 0 && params.limit <= 100
-        ? params.limit
+      +params?.limit && +params.limit > 0 && +params.limit <= 100
+        ? +params.limit
         : 20;
 
     const skip = (page - 1) * limit;
