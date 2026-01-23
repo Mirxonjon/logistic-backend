@@ -1,0 +1,76 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Delete,
+  Query,
+  Put,
+  Req,
+  NotFoundException,
+} from '@nestjs/common';
+import { PostsService } from './logistics-message.service';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import {
+  CreateLogisticMessageDto,
+  GetLogisticsMessagesDto,
+  UpdateLogisticMessageDto,
+} from '@/types/application';
+import { query } from 'express';
+
+@ApiBearerAuth()
+@ApiTags('Posts')
+@Controller('post')
+export class PostsController {
+  constructor(private readonly logisticMessageService: PostsService) {}
+
+  @Post()
+  @ApiBody({ type: CreateLogisticMessageDto })
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() data: CreateLogisticMessageDto): Promise<any> {
+    console.log(data, 'data');
+
+    return this.logisticMessageService.create(data);
+  }
+
+  @Get('all')
+  async getAllMessages(@Query() query: GetLogisticsMessagesDto) {
+    console.log(query, 'query');
+
+    return this.logisticMessageService.getAllMessages(query);
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  async getMessage(@Param('id') id: string) {
+    return this.logisticMessageService.getMessageById(Number(id));
+  }
+
+  @Put(':id')
+  @ApiBody({ type: UpdateLogisticMessageDto })
+  @HttpCode(HttpStatus.OK)
+  async updateMessage(
+    @Param('id') id: string,
+    @Body() dto: UpdateLogisticMessageDto
+  ) {
+    return this.logisticMessageService.updateMessage(Number(id), dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteMessage(@Param('id') id: string) {
+    return this.logisticMessageService.deleteMessage(Number(id));
+  }
+  // @Patch('restore/:id')
+  // @HttpCode(HttpStatus.OK)
+  // async restore(
+  //   @Param('id') id: string,
+  //   @Req() req: RequestWithUser
+  // ): Promise<any> {
+  //   return this.logisticMessageService.restore(id, req);
+  // }
+}

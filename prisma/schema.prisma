@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model LogisticMessage {
+  id                Int       @id @default(autoincrement())
+  tgMessageId       Int       // Telegram xabar ID
+  channelName       String
+  text              String
+  date              DateTime?
+  views             Int?
+
+  aiStatus          String     // "KEEP" | "SKIP"
+  structured        Json?
+  normalized        Json?
+
+  countryFrom       String?
+  countryTo         String?
+  regionFrom        String?
+  regionTo          String?
+
+  title             String?
+  weight            Float?
+  cargoUnit         String?
+  vehicleType       String?
+  paymentType       String?
+  paymentAmount     Float?
+  advancePayment    Float?
+  paymentCurrency   String?
+  pickupDate        DateTime?
+  phoneNumber       String?
+
+
+  sentToTelegramAt  DateTime? 
+  isComplete        Boolean @default(false)
+
+  isActual          Boolean    @default(true) // xabar yangimi yoki yo‘qmi
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}
+
