@@ -34,26 +34,25 @@ export class PostsController {
   @ApiBody({ type: CreateLogisticMessageDto })
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() data: CreateLogisticMessageDto): Promise<any> {
-    console.log(data, 'data');
 
     return this.logisticMessageService.create(data);
   }
 
   @Get('all')
   async getAllMessages(@Query() query: GetLogisticsMessagesDto) {
-    console.log(query, 'query');
-
     return this.logisticMessageService.getAllMessages(query);
   }
 
+  @Get('formatted')
+  async getAllMessagesWithFormat(@Query() query: GetLogisticsMessagesDto) {
+    return this.logisticMessageService.getAllMessagesWithFormat(query);
+  }
+
   @Sse('all/sse')
-  getAllMessagesSse(
-    @Query() query: GetLogisticsMessagesDto 
-  ) {
+  getAllMessagesSse(@Query() query: GetLogisticsMessagesDto) {
     const intervalMs =
       query.interval && query.interval >= 1000 ? query.interval : 5000; // default
 
-    console.log(query, 'query');
 
     return interval(intervalMs).pipe(
       switchMap(() => from(this.logisticMessageService.getAllMessages(query))),

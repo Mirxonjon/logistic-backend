@@ -46,7 +46,6 @@ export class TelegramService {
         parse_mode: options.parseMode || 'HTML',
         message_thread_id: topicId,
       });
-      // console.log(result);
       return result;
     } catch (error) {
       // this.logger.error('Guruhga xabar yuborishda xato:', error);

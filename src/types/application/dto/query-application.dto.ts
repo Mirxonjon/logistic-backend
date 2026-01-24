@@ -6,7 +6,7 @@ import {
   IsBoolean,
   IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class GetLogisticsMessagesDto {
   // =====================
@@ -19,18 +19,26 @@ export class GetLogisticsMessagesDto {
   channelName?: string;
 
   @ApiPropertyOptional({
-    example: 'KEEP',
-    enum: ['KEEP', 'SKIP'],
+    example: 'LOAD_POST',
+    enum: ['LOAD_POST', 'REGULAR_MESSAGE'],
   })
   @IsOptional()
-  @IsEnum(['KEEP', 'SKIP'])
-  aiStatus?: 'KEEP' | 'SKIP';
+  @IsEnum(['LOAD_POST', 'REGULAR_MESSAGE'])
+  aiStatus?: 'LOAD_POST' | 'REGULAR_MESSAGE';
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   isActual?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'TRUE',
+    enum: ['TRUE', 'FALSE'],
+  })
+  @IsOptional()
+  @IsEnum(['TRUE', 'FALSE'])
+  isComplete?: 'TRUE' | 'FALSE';
 
   // =====================
   // 📍 ROUTE FILTERS
@@ -71,10 +79,6 @@ export class GetLogisticsMessagesDto {
   @Type(() => Number)
   @IsNumber()
   weightMax?: number;
-
-  // =====================
-  // 📄 PAGINATION
-  // =====================
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()

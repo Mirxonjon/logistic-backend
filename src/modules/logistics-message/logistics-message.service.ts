@@ -23,6 +23,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { LogisticsGateway } from '../notification-gateway/notification-gateway.gateway';
 import { classifyByRegex } from '@/common/utils/regex-classifier';
 import { Prisma } from '@prisma/client';
+import { routeData } from '@/common/helpers/route-data';
 
 @Injectable()
 export class PostsService {
@@ -235,6 +236,10 @@ ${text}
       where.isActual = params.isActual;
     }
 
+    if (params?.isComplete !== undefined) {
+      where.isComplete = params.isComplete === 'TRUE';
+    }
+
     // ROUTE FILTERS
     if (params?.countryFrom) {
       where.countryFrom = params.countryFrom;
@@ -263,6 +268,7 @@ ${text}
     // =====================
     // DB QUERIES (parallel)
     // =====================
+    console.log(where, 'where', params?.isComplete);
     const [data, total] = await this.prisma.$transaction([
       this.prisma.logisticMessage.findMany({
         where,
@@ -283,6 +289,130 @@ ${text}
       totalPages: Math.ceil(total / limit),
       count: data.length, // shu sahifadagi yozuvlar
       data,
+    };
+  }
+  async getAllMessagesWithFormat(params?: GetLogisticsMessagesDto) {
+    // =====================
+    // PAGINATION DEFAULTS
+    // =====================
+    const page = +params?.page && +params.page > 0 ? +params.page : 1;
+    const limit =
+      +params?.limit && +params.limit > 0 && +params.limit <= 100
+        ? +params.limit
+        : 20;
+
+    const skip = (page - 1) * limit;
+
+    // =====================
+    // WHERE BUILDER
+    // =====================
+    const where: Prisma.LogisticMessageWhereInput = {};
+
+    // BASIC FILTERS
+    if (params?.channelName) {
+      where.channelName = params.channelName;
+    }
+
+    if (params?.aiStatus) {
+      where.aiStatus = params.aiStatus;
+    }
+
+    if (params?.isActual !== undefined) {
+      where.isActual = params.isActual;
+    }
+
+    if (params?.isComplete !== undefined) {
+      where.isComplete = params.isComplete === 'TRUE';
+    }
+
+    // ROUTE FILTERS
+    if (params?.countryFrom) {
+      where.countryFrom = params.countryFrom;
+    }
+
+    if (params?.countryTo) {
+      where.countryTo = params.countryTo;
+    }
+
+    if (params?.regionFrom) {
+      where.regionFrom = params.regionFrom;
+    }
+
+    if (params?.regionTo) {
+      where.regionTo = params.regionTo;
+    }
+
+    // WEIGHT RANGE
+    if (params?.weightMin !== undefined || params?.weightMax !== undefined) {
+      where.weight = {
+        ...(params?.weightMin !== undefined ? { gte: params.weightMin } : {}),
+        ...(params?.weightMax !== undefined ? { lte: params.weightMax } : {}),
+      };
+    }
+
+    // =====================
+    // DB QUERIES (parallel)
+    // =====================
+
+    console.log(where, 'where');
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.logisticMessage.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.logisticMessage.count({ where }),
+    ]);
+    let formattedData = [];
+    for (const message of data) {
+      let formattedMessage = {
+        id: message.id,
+        countryFrom: await this.getCountryNameByIndexedName(
+          routeData,
+          message.countryFrom
+        ),
+        countryTo: await this.getCountryNameByIndexedName(
+          routeData,
+          message.countryTo
+        ),
+        regionFrom: await (
+          await this.getRegionInfoByIndexedName(routeData, message.regionFrom)
+        )?.regionName,
+        regionTo: await (
+          await this.getRegionInfoByIndexedName(routeData, message.regionTo)
+        )?.regionName,
+        title: message.title,
+        weight: message.weight,
+        cargoUnit: message.cargoUnit,
+        vehicleType: message.vehicleType,
+        paymentType: message.paymentType,
+        paymentAmount: message.paymentAmount,
+        paymentCurrency: message.paymentCurrency,
+        advancePayment: message.advancePayment,
+        pickupDate: message.pickupDate,
+        phoneNumber: message.phoneNumber,
+        sentAgo: await this.getTimeAgo(message.sentToTelegramAt),
+        sentToTelegramAt: message.sentToTelegramAt,
+
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+      };
+
+      formattedData.push(formattedMessage);
+    }
+
+    // =====================
+    // RESPONSE
+    // =====================
+    return {
+      page,
+      limit,
+      total, // jami mos keladigan yozuvlar
+      totalPages: Math.ceil(total / limit),
+      count: data.length, // shu sahifadagi yozuvlar
+      data: formattedData,
     };
   }
 
@@ -421,6 +551,60 @@ ${text}
     if (num >= 1_000) return (num / 1_000).toFixed(2) + 'K';
     return num.toFixed(2);
   }
+
+  async getRegionInfoByIndexedName(
+    routeData: any[],
+    indexedName: string
+  ): Promise<{ regionName: string; countryIndexedName: string }> {
+    for (const country of routeData) {
+      for (const region of country.regions || []) {
+        if (region.indexedName === indexedName) {
+          return {
+            regionName: region.name,
+            countryIndexedName: country.indexedName,
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  async getCountryNameByIndexedName(
+    routeData: any[],
+    indexedName: string
+  ): Promise<string> {
+    const country = routeData.find((c) => c.indexedName === indexedName);
+
+    return country ? country.countryNameLat : null;
+  }
+
+  async getTimeAgo(
+    fromDate?: Date | null
+  ): Promise<{ count: number; unit: 'second' | 'minute' | 'hour' | 'day' }> {
+    if (!fromDate) return null;
+
+    const now = Date.now();
+    const diffMs = now - new Date(fromDate).getTime();
+
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) {
+      return { count: seconds, unit: 'second' };
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return { count: minutes, unit: 'minute' };
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return { count: hours, unit: 'hour' };
+    }
+
+    const days = Math.floor(hours / 24);
+    return { count: days, unit: 'day' };
+  }
+
   // @Cron(CronExpression.EVERY_MINUTE)
   async processScrapedChannels(): Promise<any> {
     const methodName = this.processScrapedChannels.name;

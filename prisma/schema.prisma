@@ -16,7 +16,7 @@ model LogisticMessage {
   date              DateTime?
   views             Int?
 
-  aiStatus          String     // "KEEP" | "SKIP"
+  aiStatus          String     // "LOAD_POST" | "REGULAR_MESSAGE"
   structured        Json?
   normalized        Json?
 
