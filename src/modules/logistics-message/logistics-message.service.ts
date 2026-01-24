@@ -13,6 +13,7 @@ import {
   UpdateLogisticMessageDto,
 } from '@/types/application';
 
+
 import { RequestWithUser } from '@/types/global';
 import { application } from 'express';
 import { TelegramService } from '@/external/telegram/telegram.service';
@@ -266,9 +267,85 @@ ${text}
     }
 
     // =====================
+    // NEW FILTERS
+    // =====================
+    // title contains (insensitive)
+    if (params?.title) {
+      where.title = { contains: params.title, mode: 'insensitive' };
+    }
+
+    // cargoUnit exact
+    if (params?.cargoUnit) {
+      where.cargoUnit = params.cargoUnit;
+    }
+
+    // vehicleType contains (insensitive)
+    if (params?.vehicleType) {
+      where.vehicleType = { contains: params.vehicleType, mode: 'insensitive' };
+    }
+
+    // paymentType exact
+    if (params?.paymentType) {
+      where.paymentType = params.paymentType;
+    }
+
+    // paymentAmount range
+    if (
+      params?.paymentAmountMin !== undefined ||
+      params?.paymentAmountMax !== undefined
+    ) {
+      where.paymentAmount = {
+        ...(params?.paymentAmountMin !== undefined
+          ? { gte: params.paymentAmountMin }
+          : {}),
+        ...(params?.paymentAmountMax !== undefined
+          ? { lte: params.paymentAmountMax }
+          : {}),
+      };
+    }
+
+    // paymentCurrency exact
+    if (params?.paymentCurrency) {
+      where.paymentCurrency = params.paymentCurrency;
+    }
+
+    // hasAdvancePayment => NOT NULL / NULL
+    if (params?.hasAdvancePayment !== undefined) {
+      where.advancePayment = params.hasAdvancePayment ? { not: null } : null;
+    }
+
+    // pickupDate / sentToTelegramAt ranges from UNIX ms
+    const toDate = (v?: number): Date | undefined => {
+      if (v === undefined || v === null) return undefined;
+      const d = new Date(Number(v));
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    {
+      const from = toDate(params?.pickupDateFrom);
+      const to = toDate(params?.pickupDateTo);
+      if (from || to) {
+        where.pickupDate = {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        };
+      }
+    }
+
+    {
+      const from = toDate(params?.sentFrom);
+      const to = toDate(params?.sentTo);
+      if (from || to) {
+        where.sentToTelegramAt = {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        };
+      }
+    }
+
+    // =====================
     // DB QUERIES (parallel)
     // =====================
-    console.log(where, 'where', params?.isComplete);
     const [data, total] = await this.prisma.$transaction([
       this.prisma.logisticMessage.findMany({
         where,
@@ -351,11 +428,79 @@ ${text}
     }
 
     // =====================
+    // NEW FILTERS
+    // =====================
+    if (params?.title) {
+      where.title = { contains: params.title, mode: 'insensitive' };
+    }
+
+    if (params?.cargoUnit) {
+      where.cargoUnit = params.cargoUnit;
+    }
+
+    if (params?.vehicleType) {
+      where.vehicleType = { contains: params.vehicleType, mode: 'insensitive' };
+    }
+
+    if (params?.paymentType) {
+      where.paymentType = params.paymentType;
+    }
+
+    if (
+      params?.paymentAmountMin !== undefined ||
+      params?.paymentAmountMax !== undefined
+    ) {
+      where.paymentAmount = {
+        ...(params?.paymentAmountMin !== undefined
+          ? { gte: params.paymentAmountMin }
+          : {}),
+        ...(params?.paymentAmountMax !== undefined
+          ? { lte: params.paymentAmountMax }
+          : {}),
+      };
+    }
+
+    if (params?.paymentCurrency) {
+      where.paymentCurrency = params.paymentCurrency;
+    }
+
+    if (params?.hasAdvancePayment !== undefined) {
+      where.advancePayment =
+        params.hasAdvancePayment == 'YES' ? { not: null } : null;
+    }
+
+    const toDate = (v?: number): Date | undefined => {
+      if (v === undefined || v === null) return undefined;
+      const d = new Date(Number(v));
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    {
+      const from = toDate(params?.pickupDateFrom);
+      const to = toDate(params?.pickupDateTo);
+      if (from || to) {
+        where.pickupDate = {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        };
+      }
+    }
+
+    {
+      const from = toDate(params?.sentFrom);
+      const to = toDate(params?.sentTo);
+      if (from || to) {
+        where.sentToTelegramAt = {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        };
+      }
+    }
+    console.log(where);
+
+    // =====================
     // DB QUERIES (parallel)
     // =====================
-
-    console.log(where, 'where');
-
     const [data, total] = await this.prisma.$transaction([
       this.prisma.logisticMessage.findMany({
         where,

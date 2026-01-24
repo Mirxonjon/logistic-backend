@@ -5,14 +5,13 @@ import {
   IsEnum,
   IsBoolean,
   IsNumber,
+  IsIn,
+  IsDateString,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class GetLogisticsMessagesDto {
-  // =====================
-  // 📡 BASIC FILTERS
-  // =====================
-
+  // Basic filters
   @ApiPropertyOptional({ example: 'Muzaffardanyuklar' })
   @IsOptional()
   @IsString()
@@ -23,7 +22,7 @@ export class GetLogisticsMessagesDto {
     enum: ['LOAD_POST', 'REGULAR_MESSAGE'],
   })
   @IsOptional()
-  @IsEnum(['LOAD_POST', 'REGULAR_MESSAGE'])
+  @IsIn(['LOAD_POST', 'REGULAR_MESSAGE'])
   aiStatus?: 'LOAD_POST' | 'REGULAR_MESSAGE';
 
   @ApiPropertyOptional({ example: true })
@@ -32,18 +31,12 @@ export class GetLogisticsMessagesDto {
   @IsBoolean()
   isActual?: boolean;
 
-  @ApiPropertyOptional({
-    example: 'TRUE',
-    enum: ['TRUE', 'FALSE'],
-  })
+  @ApiPropertyOptional({ example: 'TRUE', enum: ['TRUE', 'FALSE'] })
   @IsOptional()
-  @IsEnum(['TRUE', 'FALSE'])
+  @IsIn(['TRUE', 'FALSE'])
   isComplete?: 'TRUE' | 'FALSE';
 
-  // =====================
-  // 📍 ROUTE FILTERS
-  // =====================
-
+  // Route filters
   @ApiPropertyOptional({ example: 'UZ' })
   @IsOptional()
   @IsString()
@@ -64,22 +57,103 @@ export class GetLogisticsMessagesDto {
   @IsString()
   regionTo?: string;
 
-  // =====================
-  // ⚖️ WEIGHT RANGE (real modelga mos)
-  // =====================
-
-  @ApiPropertyOptional({ example: 20, description: 'Minimal weight (tonna)' })
+  // Weight
+  @ApiPropertyOptional({ example: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   weightMin?: number;
 
-  @ApiPropertyOptional({ example: 25, description: 'Maksimal weight (tonna)' })
+  @ApiPropertyOptional({ example: 25 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   weightMax?: number;
 
+  // New filters
+  @ApiPropertyOptional({ example: "Bug'doy yuklash" })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional({ example: 'tons', enum: ['tons', 'pallet'] })
+  @IsOptional()
+  @IsIn(['tons', 'pallet'])
+  cargoUnit?: 'tons' | 'pallet';
+
+  @ApiPropertyOptional({ example: 'tent' })
+  @IsOptional()
+  @IsString()
+  vehicleType?: string;
+
+  @ApiPropertyOptional({ example: 'cash', enum: ['cash', 'online', 'combo'] })
+  @IsOptional()
+  @IsIn(['cash', 'online', 'combo'])
+  paymentType?: 'cash' | 'online' | 'combo';
+
+  @ApiPropertyOptional({ example: 1000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  paymentAmountMin?: number;
+
+  @ApiPropertyOptional({ example: 3000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  paymentAmountMax?: number;
+
+  @ApiPropertyOptional({ example: 'usd', enum: ['usd', 'sum'] })
+  @IsOptional()
+  @IsIn(['usd', 'sum'])
+  paymentCurrency?: 'usd' | 'sum';
+
+  @ApiPropertyOptional({
+    example: 'YES',
+    enum: ['YES', 'NO'],
+    description: 'YES => advancePayment IS NOT NULL, NO => IS NULL',
+  })
+  @IsOptional()
+  @IsIn(['YES', 'NO'])
+  hasAdvancePayment?: 'YES' | 'NO';
+
+  @ApiPropertyOptional({
+    example: 1704067200000,
+    description: 'UNIX ms timestamp',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  pickupDateFrom?: number;
+
+  @ApiPropertyOptional({
+    example: 1706745599999,
+    description: 'UNIX ms timestamp',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  pickupDateTo?: number;
+
+  @ApiPropertyOptional({
+    example: 1704067200000,
+    description: 'UNIX ms timestamp',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  sentFrom?: number;
+
+  @ApiPropertyOptional({
+    example: 1706745599999,
+    description: 'UNIX ms timestamp',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  sentTo?: number;
+
+  // Pagination
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)
