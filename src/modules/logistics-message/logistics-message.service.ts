@@ -13,7 +13,6 @@ import {
   UpdateLogisticMessageDto,
 } from '@/types/application';
 
-
 import { RequestWithUser } from '@/types/global';
 import { application } from 'express';
 import { TelegramService } from '@/external/telegram/telegram.service';
@@ -58,6 +57,14 @@ export class PostsService {
       });
 
       if (existing) {
+        const updated = await this.prisma.logisticMessage.update({
+          where: {
+            id: existing.id,
+          },
+          data: {
+            sentToTelegramAt: new Date(),
+          },
+        });
         throw new BadRequestException(
           `Xabar allaqachon mavjud: tgMessageId=${tgMessageId}, channel=${channelName}`
         );
@@ -70,6 +77,14 @@ export class PostsService {
       });
 
       if (existingText) {
+        const updated = await this.prisma.logisticMessage.update({
+          where: {
+            id: existing.id,
+          },
+          data: {
+            sentToTelegramAt: new Date(),
+          },
+        });
         throw new BadRequestException(
           `Xabar allaqachon mavjud: tgMessageId=${existingText.tgMessageId}, channel=${existingText.channelName}`
         );
