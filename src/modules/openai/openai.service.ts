@@ -95,6 +95,10 @@ export class OpenaiService {
       'кетди',
       'shofyor',
       'шофёр',
+      'исузи',
+      'лабо',
+
+      'ref',
 
       'yuk',
       'moshina',
@@ -121,6 +125,12 @@ export class OpenaiService {
       'ketdi',
       'shofyor',
       'haydovchi',
+
+      'груз',
+      'т',
+      'авто',
+      'вес',
+      'груз',
     ];
 
     // 2. Yo'nalish ko'rsatuvchi qo'shimchalar (Lotin va Kirill)
@@ -166,19 +176,33 @@ export class OpenaiService {
 
   async extractRoute(text) {
     const systemPrompt = `
-Siz logistika tahlilchisiz. Berilgan matndan faqat ikkita narsani aniqlang:
-1. Yuk qayerdan olinadi (source_name)
-2. Yuk qayerga boradi (destination_name)
+Siz logistika matnidan yo'nalish ajratuvchi parser-siz.
 
-Faqat joy nomini (shahar yoki viloyat) o'zagini qaytaring (qo'shimchalarsiz, masalan: "Toshkentdan" bo'lsa "Toshkent").
+Vazifa: matndan faqat 2 ta joyni aniqlang:
+- "from": yuk qayerdan (jo'nash)
+- "to": yuk qayerga (manzil)
 
+QATTIQ QOIDALAR:
+1) Javob faqat JSON bo'lsin. Hech qanday izoh, matn, markdown yo'q.
+2) JSON faqat shu 2 ta kalitdan iborat bo'lsin: "from" va "to".
+   - Boshqa hech qanday key chiqmasin (masalan fromCountry, regionFrom va h.k. chiqsa bu xato).
+3) "from" va "to" qiymati:
+   - faqat joy nomining o'zagi (shahar/viloyat/oblast) bo'lsin. Iloji bo'lsa viloyatni qaytar.
+   - qo'shimchalar bo'lmasin ("-dan", "-ga", "г.", "обл.", "республика" va h.k. olib tashla).
+   - from va to hechqachon bir xil bo'lmaydi.
+4) Ikkalasini ham inglizcha translit bilan qaytarishga harakat qil:
+   - Toshkent -> "tashkent"
+   - Samarqand -> "samarkand"
+   - Свердловская область -> "sverdlovsk"
+5) Agar joy topilmasa: null qaytar.
+6) Agar matnda faqat shahar bo'lsa ham, shaharni qaytar (viloyat shart emas).
+7) Agar bir nechta joy uchrasa:
+   - birinchi yo'nalish joyi = from
+   - oxirgi yo'nalish joyi = to
 
-JSON TUZILMASI:
-{
-  "from": "string or null",
-  "to": "string or null",
-}`;
-
+Javob formati (Aynan shunday):
+{"from":"string or null","to":"string or null"}
+`;
     try {
       const completion = await this.client.chat.completions.create({
         model: 'gpt-4o-mini', // Tezroq va arzonroq model ham yetarli
