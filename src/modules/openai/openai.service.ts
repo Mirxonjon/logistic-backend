@@ -154,7 +154,7 @@ export class OpenaiService {
     // Maxsus: Agar xabarda → belgisi bo'lsa (Siz yuborgan msg1 kabi)
     if (cleanText.includes('→') || cleanText.includes('—')) score += 2;
 
-    const threshold = 3; // Chegara
+    const threshold = 5; // Chegara
 
     return {
       isLoad: score >= threshold,
