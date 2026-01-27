@@ -48,9 +48,6 @@ export class OpenaiService {
   }
 
   async classifier(text) {
-    if (text?.length > 200)
-      return { isLoad: false, type: 'unknown', confidence: 0 };
-
     if (!text) return { isLoad: false, type: 'unknown', confidence: 0 };
 
     const cleanText = text.toLowerCase();
@@ -132,6 +129,38 @@ export class OpenaiService {
       'вес',
       'груз',
     ];
+
+    // 2. Yuk bo'lmagan so'zlar (qattiq blok)
+    const strictZeroWords = [
+      'salom',
+      'салом',
+      'reklama',
+      'реклама',
+      'aksiya',
+      'акция',
+      'tabrik',
+      'поздравляю',
+      'sotiladi',
+      'продается',
+      'ish bor',
+      'работа',
+      'vakansiya',
+      'вакансия',
+      'obuna',
+      'обуна',
+    ];
+
+    // STRICT ZERO CHECK
+    for (const word of strictZeroWords) {
+      if (cleanText.includes(word)) {
+        return {
+          isLoad: false,
+          type: 'REGULAR_MESSAGE',
+          confidence: 0,
+          originalText: text.substring(0, 50) + '...',
+        };
+      }
+    }
 
     // 2. Yo'nalish ko'rsatuvchi qo'shimchalar (Lotin va Kirill)
     // -dan, -ga, -дан, -га, shuningdek strelka belgisi →
