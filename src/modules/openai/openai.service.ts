@@ -48,6 +48,9 @@ export class OpenaiService {
   }
 
   async classifier(text) {
+    if (text?.length > 200)
+      return { isLoad: false, type: 'unknown', confidence: 0 };
+
     if (!text) return { isLoad: false, type: 'unknown', confidence: 0 };
 
     const cleanText = text.toLowerCase();
