@@ -824,4 +824,60 @@ ${text}
       };
     }
   }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async deleteOldMessagesByCron() {
+    const methodName = 'deleteOldMessagesByCron';
+    const now = new Date();
+
+    // 24 soat oldin
+    const yesterdaySameTime = new Date(now);
+    yesterdaySameTime.setDate(now.getDate() - 1);
+
+    this.logger.debug(
+      `Method: ${methodName} | Now: ${now.toISOString()} | Threshold: ${yesterdaySameTime.toISOString()}`
+    );
+
+    const oldMessages = await this.prisma.logisticMessage.findMany({
+      where: {
+        createdAt: {
+          lt: yesterdaySameTime,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    this.logger.log(
+      `Method: ${methodName} | Found ${oldMessages.length} messages to delete`
+    );
+
+    let deletedCount = 0;
+
+    for (const msg of oldMessages) {
+      try {
+        await this.deleteMessage(msg.id);
+        deletedCount++;
+
+        this.logger.debug(
+          `Method: ${methodName} | Deleted message id=${msg.id}`
+        );
+      } catch (err) {
+        this.logger.error(
+          `Method: ${methodName} | Failed to delete message id=${msg.id}`,
+          err.stack
+        );
+      }
+    }
+
+    this.logger.log(
+      `Method: ${methodName} | Deleted ${deletedCount} messages successfully`
+    );
+
+    return {
+      success: true,
+      deletedCount,
+    };
+  }
 }
