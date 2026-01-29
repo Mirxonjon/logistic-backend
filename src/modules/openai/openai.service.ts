@@ -37,7 +37,7 @@ export class OpenaiService {
     const classifieredMessage = await this.classifier(message.message);
     console.log(classifieredMessage);
     if (classifieredMessage.isLoad) {
-      const route = await this.extractRoute(classifieredMessage.originalText);
+      const route = await this.extractRoute(classifieredMessage.cleanText);
       const metaData = await this.extractMetaData(message.message);
       console.log(route, metaData, 'route, metaData');
 
@@ -47,122 +47,119 @@ export class OpenaiService {
     }
   }
 
-  async classifier(text) {
-    if (text?.length > 200)
-      return { isLoad: false, type: 'unknown', confidence: 0 };
+  // ISCLOSE FUNCTION
+  async normalizeLoc(s) {
+  return (s ?? "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")     // diacritics
+    .replace(/[`ʻ’‘]/g, "'")            // har xil apostroflarni bitta qil
+    .replace(/o['’ʻ]g/g, "og")          // o‘g -> og (xohlasang)
+    .replace(/g['’ʻ]/g, "g")            // g‘ -> g
+    .replace(/o['’ʻ]/g, "o")            // o‘ -> o
+    .replace(/[^a-zа-яё\s-]/g, "")      // faqat harf
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
+
+async levenshtein(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+
+async isClose(a, b) {
+  a = await this.normalizeLoc(a);
+  b = await this.normalizeLoc(b);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // 1 harf farq (kukon~kokon), uzunroq bo‘lsa 2 gacha
+  const maxDist = a.length <= 6 && b.length <= 6 ? 1 : 2;
+  return await this.levenshtein(a, b) <= maxDist;
+}
+
+// CLASSIFIER
+async  classifier(text) {
     if (!text) return { isLoad: false, type: 'unknown', confidence: 0 };
+    const ALLOWED_SYMBOLS = ['+', '-', '.', ',', '$', '%', ':', '/'];
 
-    const cleanText = text.toLowerCase();
+function removeEmojis(text) {
+  const escaped = ALLOWED_SYMBOLS
+    .map(s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')) // regex escape
+    .join('');
+
+  const regex = new RegExp(`[^\\p{L}\\p{N}\\s${escaped}]`, 'gu');
+
+  return text
+    .normalize("NFKC")
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\uFE0F/g, '')
+    .replace(regex, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+    const cleanText = removeEmojis(text).toLowerCase();
 
     // 1. Yuk tashishga xos kalit so'zlar (Lotin va Kirill uyg'unligi)
     const loadKeywords = [
-      'yuk',
-      'юк',
-      'moshina',
-      'мошина',
-      'mashina',
-      'машина',
-      'fura',
-      'фура',
-      'isuzu',
-      'исузу',
-      'kamaz',
-      'камаз',
-      'gazel',
-      'газел',
-      'reys',
-      'рейс',
-      'tonna',
-      'тонна',
-      ' tn',
-      ' тн',
-      ' kg',
-      ' кг',
-      'kub',
-      'куб',
-      "so'm",
-      'som',
-      'сум',
-      'сўм',
-      'dostavka',
-      'доставка',
-      'pochta',
-      'почта',
-      'bor',
-      'бор',
-      'ketti',
-      'кетди',
-      'shofyor',
-      'шофёр',
-      'исузи',
-      'лабо',
+        'yuk', 'юк', 'moshina', 'мошина', 'mashina', 'машина',
+        'fura', 'фура', 'isuzu', 'исузу', 'kamaz', 'камаз', 'gazel', 'газел',
+        'reys', 'рейс', 'tonna', 'тонна', ' tn', ' тн', ' kg', ' кг',
+        'kub', 'куб', 'so\'m', 'som', 'сум', 'сўм', 'dostavka', 'доставка',
+        'pochta', 'почта', 'bor', 'бор', 'ketti', 'кетди', 'shofyor', 'шофёр', 'исузи', 'лабо',
 
-      'ref',
+        "ref",
 
-      'yuk',
-      'moshina',
-      'mashina',
-      'kamaz',
-      'fura',
-      'isuzu',
-      'labo',
-      'gazel',
-      'reys',
-      'tonna',
-      'tn',
-      'kg',
-      'kilo',
-      'kub',
-      "so'm",
-      'som',
-      'dostavka',
-      'pochta',
-      "bo'sh",
-      'bosh',
-      'bor',
-      'ketti',
-      'ketdi',
-      'shofyor',
-      'haydovchi',
+        'yuk', 'moshina', 'mashina', 'kamaz', 'fura', 'isuzu', 'labo', 'gazel',
+        'reys', 'tonna', 'tn', 'kg', 'kilo', 'kub', 'so\'m', 'som', 'dostavka',
+        'pochta', 'bo\'sh', 'bosh', 'bor', 'ketti', 'ketdi', 'shofyor', 'haydovchi',
 
-      'груз',
-      'т',
-      'авто',
-      'вес',
-      'груз',
+        "груз", "т", "авто", "вес", "груз",
     ];
 
     // 2. Yuk bo'lmagan so'zlar (qattiq blok)
     const strictZeroWords = [
-      'salom',
-      'салом',
-      'reklama',
-      'реклама',
-      'aksiya',
-      'акция',
-      'tabrik',
-      'поздравляю',
-      'sotiladi',
-      'продается',
-      'ish bor',
-      'работа',
-      'vakansiya',
-      'вакансия',
-      'obuna',
-      'обуна',
+        "salom", "салом",
+        "reklama", "реклама",
+        "aksiya", "акция",
+        "tabrik", "поздравляю",
+        "sotiladi", "продается",
+        "ish bor", "работа",
+        "vakansiya", "вакансия",
+        "obuna", "обуна",
     ];
 
     // STRICT ZERO CHECK
     for (const word of strictZeroWords) {
-      if (cleanText.includes(word)) {
-        return {
-          isLoad: false,
-          type: 'REGULAR_MESSAGE',
-          confidence: 0,
-          originalText: text.substring(0, 50) + '...',
-        };
-      }
+        if (cleanText.includes(word)) {
+            return {
+                isLoad: false,
+                type: 'REGULAR_MESSAGE',
+                confidence: 0,
+                cleanText: cleanText,
+                originalText: text.substring(0, 50) + "..."
+            };
+        }
     }
 
     // 2. Yo'nalish ko'rsatuvchi qo'shimchalar (Lotin va Kirill)
@@ -170,18 +167,16 @@ export class OpenaiService {
     const directionPattern = /([a-z'а-я]+(dan|ga|дан|га|qa|ка)|[→\-<>\|])/i;
 
     // 3. Telefon raqami (Yuk xabarlarida deyarli har doim bo'ladi)
-    const phonePattern =
-      /(\+?998|97|99|90|91|93|94|95|88|33|77)\s?\d{2,3}\s?\d{2,3}\s?\d{2}\s?\d{2}/;
+    const phonePattern = /(\+?998|97|99|90|91|93|94|95|88|33|77)\s?\d{2,3}\s?\d{2,3}\s?\d{2}\s?\d{2}/;
 
     // 4. Metrik pattern (Og'irlik yoki narx: 10т, 500$, 7млн)
-    const metricPattern =
-      /(\d+\s*(tn|t|тн|т|тонна|кг|kg|сум|сўм|som|usd|\$|млн))/i;
+    const metricPattern = /(\d+\s*(tn|t|тн|т|тонна|кг|kg|сум|сўм|som|usd|\$|млн))/i;
 
     let score = 0;
 
     // Kalit so'zlarni tekshirish
-    loadKeywords.forEach((word) => {
-      if (cleanText.includes(word)) score += 1.5;
+    loadKeywords.forEach(word => {
+        if (cleanText.includes(word)) score += 1.5;
     });
 
     // Yo'nalish belgilari uchun ball
@@ -199,13 +194,15 @@ export class OpenaiService {
     const threshold = 5; // Chegara
 
     return {
-      isLoad: score >= threshold,
-      type: score >= threshold ? 'LOAD_POST' : 'REGULAR_MESSAGE',
-      confidence: score,
-      originalText: text.substring(0, 50) + '...', // Matndan namuna
+        isLoad: score >= threshold,
+        type: score >= threshold ? 'LOAD_POST' : 'REGULAR_MESSAGE',
+        confidence: score,
+        cleanText: cleanText,
+        originalText: text.substring(0, 50) + "..." // Matndan namuna
     };
-  }
+}
 
+// EXTRACT ROUTE FUNCTION
   async extractRoute(text) {
     const systemPrompt = `
 Siz logistika matnidan yo'nalish ajratuvchi parser-siz.
@@ -269,27 +266,54 @@ Javob formati (Aynan shunday):
     }
   }
 
-  async findInDatabase(locationName) {
-    if (!locationName) return { country: null, region: null };
+async findInDatabase(locationName) {
+  if (!locationName) return { country: null, region: null };
 
-    const searchName = locationName.toLowerCase().trim();
+  const searchName = await this.normalizeLoc(locationName);
 
-    for (const country of routeData) {
-      // 1. Regionlar ichidan qidirish
-      for (const region of country.regions) {
-        const allAliases = [...region.alias, ...region.alias_cyr];
-        if (allAliases.some((alias) => alias.toLowerCase() === searchName)) {
-          return { country: country.indexedName, region: region.indexedName };
-        }
-      }
-      // 2. Davlat aliaslari ichidan qidirish (agar region topilmasa)
-      const countryAliases = [...country.alias, ...country.alias_cyr];
-      if (countryAliases.some((alias) => alias.toLowerCase() === searchName)) {
-        return { country: country.indexedName, region: null };
+  // ✅ 1-PASS: faqat EXACT (regions)
+  for (const country of routeData) {
+    for (const region of country.regions) {
+      const allAliases = [...(region.alias || []), ...(region.alias_cyr || [])];
+
+      if (allAliases.some(a => this.normalizeLoc(a) === searchName)) {
+        return { country: country.indexedName, region: region.indexedName };
       }
     }
-    return { country: null, region: null };
   }
+
+  // ✅ 1-PASS: faqat EXACT (countries)
+  for (const country of routeData) {
+    const countryAliases = [...(country.alias || []), ...(country.alias_cyr || [])];
+
+    if (countryAliases.some(a => this.normalizeLoc(a) === searchName)) {
+      return { country: country.indexedName, region: null };
+    }
+  }
+
+  // ✅ 2-PASS: endi Fuzzy (regions) — faqat exact topilmagandan keyin
+  for (const country of routeData) {
+    for (const region of country.regions) {
+      const allAliases = [...(region.alias || []), ...(region.alias_cyr || [])];
+
+      if (allAliases.some(a => this.isClose(a, searchName))) {
+        return { country: country.indexedName, region: region.indexedName };
+      }
+    }
+  }
+
+  // ✅ 2-PASS: endi Fuzzy (countries)
+  for (const country of routeData) {
+    const countryAliases = [...(country.alias || []), ...(country.alias_cyr || [])];
+
+    if (countryAliases.some(a => this.isClose(a, searchName))) {
+      return { country: country.indexedName, region: null };
+    }
+  }
+
+  return { country: null, region: null };
+}
+
 
   async extractMetaData(text) {
     const SYSTEM_PROMPT = `
