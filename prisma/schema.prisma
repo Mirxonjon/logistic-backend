@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model LogisticMessage {
   id                Int       @id @default(autoincrement())
   tgMessageId       Int       // Telegram xabar ID
@@ -36,8 +35,7 @@ model LogisticMessage {
   pickupDate        DateTime?
   phoneNumber       String?
 
-
-  sentToTelegramAt  DateTime? 
+  sentToTelegramAt  DateTime?
   isComplete        Boolean @default(false)
 
   isActual          Boolean    @default(true) // xabar yangimi yoki yo‘qmi
@@ -45,3 +43,11 @@ model LogisticMessage {
   updatedAt         DateTime   @updatedAt
 }
 
+model TelegramGroup {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  title     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

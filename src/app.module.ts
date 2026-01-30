@@ -17,6 +17,7 @@ import { OpenaiModule } from './modules/openai/openai.module';
 import { TelegramModule } from './external/telegram/telegram.module';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { LogisticsGatewayModule } from './modules/notification-gateway/notifications-gateway.module';
+import { TelegramGroupModule } from './modules/telegram-group/telegram-group.module';
 
 @Module({
   imports: [
@@ -35,10 +36,10 @@ import { LogisticsGatewayModule } from './modules/notification-gateway/notificat
     //   inject: [ConfigService],
     // }),
     PrismaModule,
-
     PostsModule,
-    CronJobModule,
+    TelegramGroupModule,
     OpenaiModule,
+    CronJobModule,
     TelegramModule,
     LogisticsGatewayModule,
   ],
