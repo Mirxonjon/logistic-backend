@@ -342,60 +342,22 @@ Javob formati (Aynan shunday):
   async findInDatabase(locationName) {
     if (!locationName) return { country: null, region: null };
 
-    const searchName = await this.normalizeLoc(locationName);
+    const searchName = locationName.toLowerCase().trim();
 
-    // ✅ 1-PASS: faqat EXACT (regions)
     for (const country of routeData) {
+      // 1. Regionlar ichidan qidirish
       for (const region of country.regions) {
-        const allAliases = [
-          ...(region.alias || []),
-          ...(region.alias_cyr || []),
-        ];
-
-        if (allAliases.some((a) => this.normalizeLoc(a) === searchName)) {
+        const allAliases = [...region.alias, ...region.alias_cyr];
+        if (allAliases.some((alias) => alias.toLowerCase() === searchName)) {
           return { country: country.indexedName, region: region.indexedName };
         }
       }
-    }
-
-    // ✅ 1-PASS: faqat EXACT (countries)
-    for (const country of routeData) {
-      const countryAliases = [
-        ...(country.alias || []),
-        ...(country.alias_cyr || []),
-      ];
-
-      if (countryAliases.some((a) => this.normalizeLoc(a) === searchName)) {
+      // 2. Davlat aliaslari ichidan qidirish (agar region topilmasa)
+      const countryAliases = [...country.alias, ...country.alias_cyr];
+      if (countryAliases.some((alias) => alias.toLowerCase() === searchName)) {
         return { country: country.indexedName, region: null };
       }
     }
-
-    // ✅ 2-PASS: endi Fuzzy (regions) — faqat exact topilmagandan keyin
-    for (const country of routeData) {
-      for (const region of country.regions) {
-        const allAliases = [
-          ...(region.alias || []),
-          ...(region.alias_cyr || []),
-        ];
-
-        if (allAliases.some((a) => this.isClose(a, searchName))) {
-          return { country: country.indexedName, region: region.indexedName };
-        }
-      }
-    }
-
-    // ✅ 2-PASS: endi Fuzzy (countries)
-    for (const country of routeData) {
-      const countryAliases = [
-        ...(country.alias || []),
-        ...(country.alias_cyr || []),
-      ];
-
-      if (countryAliases.some((a) => this.isClose(a, searchName))) {
-        return { country: country.indexedName, region: null };
-      }
-    }
-
     return { country: null, region: null };
   }
 
