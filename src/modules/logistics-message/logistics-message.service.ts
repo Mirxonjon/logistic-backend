@@ -41,13 +41,14 @@ export class PostsService {
     const methodName: string = this.create.name;
     console.log(CreateLogisticMessageDto, 'data');
 
-    this.logger.debug(
-      `Method: ${methodName} - Request: ${JSON.stringify(data)}`
-    );
+    this.logger.debug(`[${methodName}] Incoming request`);
+    this.logger.debug(`[${methodName}] Payload: ${JSON.stringify(data)}`);
 
     try {
       const { tgMessageId, channelName, text, date, views } = data;
-
+      this.logger.debug(
+        `[${methodName}] Checking duplicate by tgMessageId=${tgMessageId}, channel=${channelName}`
+      );
       // 1️⃣ Xabar bazada bormi? (duplicate check)
       const existing = await this.prisma.logisticMessage.findFirst({
         where: {
@@ -57,9 +58,12 @@ export class PostsService {
       });
 
       if (existing) {
+        this.logger.warn(
+          `[${methodName}] Duplicate found  (tgMessageId=${tgMessageId}, channel=${channelName})`
+        );
         const updated = await this.prisma.logisticMessage.update({
           where: {
-            id: existing.id,
+            id: existing?.id,
           },
           data: {
             sentToTelegramAt: new Date(),
@@ -69,7 +73,7 @@ export class PostsService {
           `Xabar allaqachon mavjud: tgMessageId=${tgMessageId}, channel=${channelName}`
         );
       }
-
+      this.logger.debug(`[${methodName}] Checking duplicate by text hash`);
       const existingText = await this.prisma.logisticMessage.findFirst({
         where: {
           text: text,
@@ -77,9 +81,13 @@ export class PostsService {
       });
 
       if (existingText) {
+        this.logger.warn(
+          `[${methodName}] Duplicate text found (tgMessageId=${existingText.tgMessageId}, channel=${existingText.channelName})`
+        );
+
         const updated = await this.prisma.logisticMessage.update({
           where: {
-            id: existing.id,
+            id: existing?.id,
           },
           data: {
             sentToTelegramAt: new Date(),
@@ -89,6 +97,7 @@ export class PostsService {
           `Xabar allaqachon mavjud: tgMessageId=${existingText.tgMessageId}, channel=${existingText.channelName}`
         );
       }
+      this.logger.debug(`[${methodName}] Sending text to OpenAI analyser`);
       const openaiResponse = await this.openaiService.messageAnalyse({
         message: text,
       });
@@ -110,10 +119,13 @@ export class PostsService {
           openaiResponse?.route?.fromRegion &&
           openaiResponse?.route?.toRegion
       );
-
+      this.logger.debug(`[${methodName}] isComplete=${isComplete}`);
       let fullData = baseData;
 
       if (openaiResponse.classifieredMessage.isLoad) {
+        this.logger.debug(
+          `[${methodName}] Load post detected — enriching payload`
+        );
         fullData = {
           ...baseData,
 
@@ -154,12 +166,19 @@ export class PostsService {
           isComplete,
         };
       }
-
+      this.logger.debug(`[${methodName}] Saving message to database`);
       const savedMessage = await this.prisma.logisticMessage.create({
         data: fullData,
       });
 
+      this.logger.log(
+        `[${methodName}] Saved successfully id=${savedMessage.id}`
+      );
       if (!isComplete && openaiResponse.classifieredMessage.isLoad) {
+        this.logger.warn(
+          `[${methodName}] Incomplete load detected — sending Telegram alert`
+        );
+
         const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
 
         const incompleteMessageText = `
@@ -210,6 +229,7 @@ ${text}
         await this.telegramService.sendToGroup(incompleteMessageText, 26, {
           parseMode: 'Markdown',
         });
+        this.logger.debug(`[${methodName}] Telegram alert sent`);
       }
       this.logger.debug(
         `Method: ${methodName} - Saved DB Record: ${savedMessage.id}`
