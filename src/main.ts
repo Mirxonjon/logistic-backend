@@ -38,10 +38,10 @@ async function bootstrap() {
 
   /* SWAGGER */
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('CRM Api Docs')
-    .setDescription('API description')
+    .setTitle('Logistic Backend API')
+    .setDescription('REST API documentation for Logistic Backend')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
     .build();
   const platformDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, platformDocument);

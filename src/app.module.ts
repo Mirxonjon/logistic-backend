@@ -18,6 +18,7 @@ import { TelegramModule } from './external/telegram/telegram.module';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { LogisticsGatewayModule } from './modules/notification-gateway/notifications-gateway.module';
 import { TelegramGroupModule } from './modules/telegram-group/telegram-group.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { TelegramGroupModule } from './modules/telegram-group/telegram-group.mod
     CronJobModule,
     TelegramModule,
     LogisticsGatewayModule,
+    AuthModule,
   ],
   providers: [
     {
