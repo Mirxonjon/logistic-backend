@@ -1,10 +1,10 @@
 export const routeData = [
+  // UZBEKISTAN
   {
     indexedName: 'uzbekistan',
     countryNameCyr: 'узбекистон',
     countryNameLat: "O'zbekiston",
     alias: [],
-    alias_cyr: [],
     regions: [
       {
         id: 1,
@@ -51,28 +51,10 @@ export const routeData = [
           'chirchiq',
           'yuqorichirchik',
           'yukorichirchik',
-          'hasanboy',
           'xasanboy',
-          'sergeli',
           'sergili',
           'yangiyol',
           'yangiyul',
-        ],
-
-        alias_cyr: [
-          'тошкент',
-          'ташкент',
-          'тошент',
-          'тошкен',
-          'пойтахт',
-          'тошкент шаҳар',
-          'тош',
-          'тошкент ш',
-          'ташкент',
-          'аркбулок',
-          'уртасарой',
-          'чукурсай',
-          'яшнабод',
         ],
       },
       {
@@ -93,6 +75,7 @@ export const routeData = [
           'bekobod',
           'olmaliq',
           'olmalik',
+          'almalyk',
           'angren',
           'ahangaran',
           'ohangaron',
@@ -109,23 +92,6 @@ export const routeData = [
           'bektemir',
           'ohangaron',
           'boka',
-        ],
-
-        alias_cyr: [
-          'тошкент вилояти',
-          'тошкент обл',
-          'ташкентская область',
-          'ташкент обл',
-          'нурафшон',
-          'чирчиқ',
-          'янгийўл',
-          'бекобод',
-          'ахангаран',
-          'охангарон',
-          'ангрен',
-          'олмалик',
-          'назарбек',
-          'газалкент',
         ],
       },
       {
@@ -153,15 +119,6 @@ export const routeData = [
           'shahrihon',
           "ulug'nor",
           'xonabod',
-        ],
-        alias_cyr: [
-          'андижон',
-          'андижан',
-          'андижонлик',
-          'асака',
-          'шахрихон',
-          'анд',
-          'хожабод',
         ],
       },
       {
@@ -205,24 +162,6 @@ export const routeData = [
           'kokon',
           'besharik',
         ],
-
-        alias_cyr: [
-          'фарғона',
-          'фергана',
-          'фаргона',
-          'қўқон',
-          'қуқон',
-          'марғилон',
-          'марғулон',
-          'риштон',
-          'олтиариқ',
-          'бувайda',
-          'вадил',
-          'водил',
-          'кукон',
-          'коканд',
-          'маргилон',
-        ],
       },
       {
         id: 5,
@@ -241,16 +180,6 @@ export const routeData = [
           'nam',
           'norin',
           'toraqorgon',
-        ],
-        alias_cyr: [
-          'наманган',
-          'наманган вилояти',
-          'чуст',
-          'косонсой',
-          'поп',
-          'нам',
-          'мингбулок',
-          'учкорган',
         ],
       },
       {
@@ -271,14 +200,6 @@ export const routeData = [
           'sayxunobod',
           'shirin',
           'yangiyer',
-        ],
-        alias_cyr: [
-          'сирдарё',
-          'сырдарья',
-          'сирдарё вилояти',
-          'гулистон',
-          'янгиер',
-          'сирдаре',
         ],
       },
       {
@@ -303,7 +224,6 @@ export const routeData = [
           'sharof rashidov',
           'zafarobod',
         ],
-        alias_cyr: ['жиззах', 'джизак', 'жизах', 'зомин', 'фориш'],
       },
       {
         id: 8,
@@ -340,22 +260,6 @@ export const routeData = [
           'kattaqurgon',
           'kattaqorgon',
         ],
-
-        alias_cyr: [
-          'самарқанд',
-          'самарканд',
-          'самаркандская область',
-          'сам',
-          'каттақўрғон',
-          'ургут',
-          'курган',
-          'булунгур',
-          'мирбозор',
-          'мирбоз',
-          'хатерчи',
-          'пастакент',
-          'пастаргон',
-        ],
       },
       {
         id: 9,
@@ -382,16 +286,6 @@ export const routeData = [
           'gazli',
           'buhoro',
         ],
-
-        alias_cyr: [
-          'бухоро',
-          'бухара',
-          'вухоро',
-          'ғиждувон',
-          'вобкент',
-          'қоракўл',
-          'каракуль',
-        ],
       },
       {
         id: 10,
@@ -409,16 +303,6 @@ export const routeData = [
           'nurota',
           'qiziltepa',
           'tomdi',
-        ],
-        alias_cyr: [
-          'навоий',
-          'навои',
-          'навоийская область',
-          'навоийская обл',
-          'учқудуқ',
-          'зарафшон',
-          'новойи',
-          'кизил тепа',
         ],
       },
       {
@@ -448,18 +332,6 @@ export const routeData = [
           'muborak',
           'qamashi',
           'nishon',
-          'kitob',
-        ],
-
-        alias_cyr: [
-          'қашқадарё',
-          'кашкадарья',
-          'кашкадарьинская область',
-          'қарши',
-          'карши',
-          'насаф',
-          'қаш',
-          'карши',
         ],
       },
       {
@@ -489,18 +361,6 @@ export const routeData = [
           'surchondaryo',
           'denau',
         ],
-
-        alias_cyr: [
-          'сурхондарё',
-          'сурхандарё',
-          'сурхандарья',
-          'термиз',
-          'термез',
-          'денов',
-          'сурхон',
-          'айратон',
-          'ипок',
-        ],
       },
       {
         id: 13,
@@ -520,16 +380,6 @@ export const routeData = [
           'yangiariq',
           'xorazim',
           'horazm',
-        ],
-
-        alias_cyr: [
-          'хоразм',
-          'хорезм',
-          'харезм',
-          'урганч',
-          'ургенч',
-          'хива',
-          'хоразим',
         ],
       },
       {
@@ -556,26 +406,16 @@ export const routeData = [
           'karakalpak',
           'akchulok',
         ],
-
-        alias_cyr: [
-          'қорақалпоғистон',
-          'каракалпакстан',
-          'каракалпакия',
-          'нукус',
-          'нокус',
-          'қрқ',
-          'тўрткўл',
-          'турткул',
-        ],
       },
     ],
   },
+
+  // RUSSIA
   {
     indexedName: 'russia',
     countryNameCyr: 'Россия',
     countryNameLat: 'Rossiya',
     alias: ['russia', 'rossiya', 'ru', 'rus'],
-    alias_cyr: ['россия', 'рф', 'ру', 'рус'],
     regions: [
       {
         id: 1,
@@ -590,7 +430,6 @@ export const routeData = [
           'msk',
           'maskva',
         ],
-        alias_cyr: ['москва', 'московская область', 'мо', 'мск', 'масква'],
       },
       {
         id: 2,
@@ -604,13 +443,6 @@ export const routeData = [
           'spb',
           'sankt-peterburg',
         ],
-        alias_cyr: [
-          'санкт-петербург',
-          'питер',
-          'спб',
-          'санкт петербург',
-          'ленинград',
-        ],
       },
       {
         id: 3,
@@ -618,7 +450,6 @@ export const routeData = [
         indexedName: 'novosibirsk',
         center: 'Novosibirsk',
         alias: ['novosibirsk', 'nvs', 'sibir', 'nsk'],
-        alias_cyr: ['новосибирск', 'нвс', 'сибирь', 'нск'],
       },
       {
         id: 4,
@@ -626,7 +457,6 @@ export const routeData = [
         indexedName: 'yekaterinburg',
         center: 'Yekaterinburg',
         alias: ['yekaterinburg', 'ekb', 'ekaterinburg', 'sverdlovsk', 'burg'],
-        alias_cyr: ['екатеринбург', 'екб', 'свердловск', 'бург'],
       },
       {
         id: 5,
@@ -634,7 +464,6 @@ export const routeData = [
         indexedName: 'kazan',
         center: 'Kazan',
         alias: ['kazan', 'qazan', 'tatarstan', 'qozon'],
-        alias_cyr: ['казань', 'татарстан', 'қазон'],
       },
       {
         id: 6,
@@ -642,7 +471,6 @@ export const routeData = [
         indexedName: 'chelyabinsk',
         center: 'Chelyabinsk',
         alias: ['chelyabinsk', 'chelyaba', 'chelabinsk', 'chel'],
-        alias_cyr: ['челябинск', 'челяба', 'челабинск', 'чел'],
       },
       {
         id: 7,
@@ -650,7 +478,6 @@ export const routeData = [
         indexedName: 'samara',
         center: 'Samara',
         alias: ['samara', 'kuybishev'],
-        alias_cyr: ['самара', 'куйбышев'],
       },
       {
         id: 8,
@@ -658,7 +485,6 @@ export const routeData = [
         indexedName: 'rostov_on_don',
         center: 'Rostov-na-Donu',
         alias: ['rostov', 'rostov-on-don', 'rostov na donu', 'rnd'],
-        alias_cyr: ['ростов', 'ростов-на-дону', 'ростов на дону', 'рнд'],
       },
       {
         id: 9,
@@ -666,7 +492,6 @@ export const routeData = [
         indexedName: 'ufa',
         center: 'Ufa',
         alias: ['ufa', 'bashkortostan', 'bashkiria', 'sterlitamak'],
-        alias_cyr: ['уфа', 'башкортостан', 'башкирия'],
       },
       {
         id: 10,
@@ -674,7 +499,6 @@ export const routeData = [
         indexedName: 'volgograd',
         center: 'Volgograd',
         alias: ['volgograd', 'stalingrad'],
-        alias_cyr: ['волгоград', 'сталинград'],
       },
       {
         id: 11,
@@ -682,7 +506,6 @@ export const routeData = [
         indexedName: 'krasnodar',
         center: 'Krasnodar',
         alias: ['krasnodar', 'kuban', 'krd'],
-        alias_cyr: ['краснодар', 'кубань', 'крд'],
       },
       {
         id: 12,
@@ -690,7 +513,6 @@ export const routeData = [
         indexedName: 'omsk',
         center: 'Omsk',
         alias: ['omsk'],
-        alias_cyr: ['омск'],
       },
       {
         id: 13,
@@ -698,7 +520,6 @@ export const routeData = [
         indexedName: 'voronezh',
         center: 'Voronezh',
         alias: ['voronezh', 'voronej'],
-        alias_cyr: ['воронеж'],
       },
       {
         id: 14,
@@ -706,7 +527,6 @@ export const routeData = [
         indexedName: 'kirov',
         center: 'Kirov',
         alias: ['kirov', 'vyatka', 'kirovskaya oblast'],
-        alias_cyr: ['киров', 'вятка', 'кировская область'],
       },
       {
         id: 15,
@@ -722,15 +542,6 @@ export const routeData = [
           'arzamas',
           'baraba',
         ],
-        alias_cyr: [
-          'нижний новгород',
-          'нн',
-          'нижний',
-          'горький',
-          'нижегородская',
-          'арзамас',
-          'бараба',
-        ],
       },
       {
         id: 16,
@@ -738,7 +549,6 @@ export const routeData = [
         indexedName: 'tomsk',
         center: 'Tomsk',
         alias: ['tomsk', 'tomskaya oblast', 'tomsk oblast', 'asino'],
-        alias_cyr: ['томск', 'томская область', 'томск область', 'асино'],
       },
       {
         id: 17,
@@ -746,7 +556,6 @@ export const routeData = [
         indexedName: 'kemerovo',
         center: 'Kemerovo',
         alias: ['kemerovo', 'kem', 'kuzbass', 'shcheglovsk', 'novokuznetsk'],
-        alias_cyr: ['кемерово', 'кем', 'кузбасс', 'щегловск', 'новокузнецк'],
       },
       {
         id: 18,
@@ -754,7 +563,6 @@ export const routeData = [
         indexedName: 'altay_krai',
         center: 'Barnaul',
         alias: ['altay krai', 'altay', 'barnaul', 'rubtsovsk', 'biysk'],
-        alias_cyr: ['алтайский край', 'алтай', 'барнаул', 'рубцовск', 'бийск'],
       },
       {
         id: 19,
@@ -762,11 +570,6 @@ export const routeData = [
         indexedName: 'arkhangelsk_oblast',
         center: 'Arkhangelsk',
         alias: ['arkhangelsk', 'arkhangelskaya oblast', 'arkhangelsk oblast'],
-        alias_cyr: [
-          'архангельск',
-          'архангельская область',
-          'архангельск область',
-        ],
       },
       {
         id: 20,
@@ -774,7 +577,6 @@ export const routeData = [
         indexedName: 'saratov',
         center: 'Saratov',
         alias: ['saratov', 'saratovskaya oblast', 'saratov oblast'],
-        alias_cyr: ['саратов', 'саратовская область', 'саратов область'],
       },
       {
         id: 21,
@@ -782,7 +584,6 @@ export const routeData = [
         indexedName: 'ulyanovsk',
         center: 'Ulyanovsk',
         alias: ['ulyanovsk', 'ulyanovskaya oblast', 'ulyanovsk oblast'],
-        alias_cyr: ['ульяновск', 'ульяновская область', 'ульяновск область'],
       },
       {
         id: 22,
@@ -790,7 +591,6 @@ export const routeData = [
         indexedName: 'amur_oblast',
         center: 'Blagoveshchensk',
         alias: ['amur oblast', 'amurskaya oblast', 'blagoveshchensk', 'blg'],
-        alias_cyr: ['амурская область', 'амурская', 'благовещенск', 'блг'],
       },
       {
         id: 23,
@@ -803,7 +603,6 @@ export const routeData = [
           'astrakhan',
           'ast',
         ],
-        alias_cyr: ['астраханская область', 'астрахань', 'астраханская', 'аст'],
       },
       {
         id: 24,
@@ -811,7 +610,6 @@ export const routeData = [
         indexedName: 'belgorod_oblast',
         center: 'Belgorod',
         alias: ['belgorod oblast', 'belgorodskaya oblast', 'belgorod', 'bel'],
-        alias_cyr: ['белгородская область', 'белгород', 'белгородская', 'бел'],
       },
       {
         id: 25,
@@ -819,7 +617,6 @@ export const routeData = [
         indexedName: 'bryansk_oblast',
         center: 'Bryansk',
         alias: ['bryansk oblast', 'bryanskaya oblast', 'bryansk', 'brn'],
-        alias_cyr: ['брянская область', 'брянск', 'брянская', 'брн'],
       },
       {
         id: 26,
@@ -827,7 +624,6 @@ export const routeData = [
         indexedName: 'vladimir_oblast',
         center: 'Vladimir',
         alias: ['vladimir oblast', 'vladimirskaya oblast', 'vladimir', 'vlm'],
-        alias_cyr: ['владимирская область', 'владимир', 'владимирская', 'влм'],
       },
       {
         id: 27,
@@ -835,7 +631,6 @@ export const routeData = [
         indexedName: 'vologda_oblast',
         center: 'Vologda',
         alias: ['vologda oblast', 'vologodskaya oblast', 'vologda', 'vol'],
-        alias_cyr: ['вологодская область', 'вологда', 'вологодская', 'вол'],
       },
       {
         id: 28,
@@ -843,7 +638,6 @@ export const routeData = [
         indexedName: 'ivanovo_oblast',
         center: 'Ivanovo',
         alias: ['ivanovo oblast', 'ivanovskaya oblast', 'ivanovo', 'iva'],
-        alias_cyr: ['ивановская область', 'иваново', 'ивановская', 'ива'],
       },
       {
         id: 29,
@@ -851,7 +645,6 @@ export const routeData = [
         indexedName: 'irkutsk_oblast',
         center: 'Irkutsk',
         alias: ['irkutsk oblast', 'irkutskaya oblast', 'irkutsk', 'irk'],
-        alias_cyr: ['иркутская область', 'иркутск', 'иркутская', 'ирк'],
       },
       {
         id: 30,
@@ -864,12 +657,6 @@ export const routeData = [
           'kaliningrad',
           'klg',
         ],
-        alias_cyr: [
-          'калининградская область',
-          'калининград',
-          'калининградская',
-          'клг',
-        ],
       },
       {
         id: 31,
@@ -877,7 +664,6 @@ export const routeData = [
         indexedName: 'kaluga_oblast',
         center: 'Kaluga',
         alias: ['kaluga oblast', 'kaluzhskaya oblast', 'kaluga', 'klzh'],
-        alias_cyr: ['калужская область', 'калуга', 'калужская', 'клж'],
       },
       {
         id: 32,
@@ -885,7 +671,6 @@ export const routeData = [
         indexedName: 'kostroma_oblast',
         center: 'Kostroma',
         alias: ['kostroma oblast', 'kostromskaya oblast', 'kostroma', 'kos'],
-        alias_cyr: ['костромская область', 'кострома', 'костромская', 'кос'],
       },
       {
         id: 33,
@@ -893,7 +678,6 @@ export const routeData = [
         indexedName: 'kurgan_oblast',
         center: 'Kurgan',
         alias: ['kurgan oblast', 'kurganskaya oblast', 'kurgan', 'kug'],
-        alias_cyr: ['курганская область', 'курган', 'курганская', 'куг'],
       },
       {
         id: 34,
@@ -901,7 +685,6 @@ export const routeData = [
         indexedName: 'kursk_oblast',
         center: 'Kursk',
         alias: ['kursk oblast', 'kurskaya oblast', 'kursk', 'krs'],
-        alias_cyr: ['курская область', 'курск', 'курская', 'крс'],
       },
       {
         id: 35,
@@ -909,7 +692,6 @@ export const routeData = [
         indexedName: 'lipetsk_oblast',
         center: 'Lipetsk',
         alias: ['lipetsk oblast', 'lipetskaya oblast', 'lipetsk', 'lpt'],
-        alias_cyr: ['липецкая область', 'липецк', 'липецкая', 'лпц'],
       },
       {
         id: 36,
@@ -917,7 +699,6 @@ export const routeData = [
         indexedName: 'magadan_oblast',
         center: 'Magadan',
         alias: ['magadan oblast', 'magadanskaya oblast', 'magadan', 'mag'],
-        alias_cyr: ['магаданская область', 'магадан', 'магаданская', 'маг'],
       },
       {
         id: 37,
@@ -925,7 +706,6 @@ export const routeData = [
         indexedName: 'murmansk_oblast',
         center: 'Murmansk',
         alias: ['murmansk oblast', 'murmanskaya oblast', 'murmansk', 'mur'],
-        alias_cyr: ['мурманская область', 'мурманск', 'мурманская', 'мур'],
       },
       {
         id: 38,
@@ -933,7 +713,6 @@ export const routeData = [
         indexedName: 'novgorod_oblast',
         center: 'Veliky Novgorod',
         alias: ['novgorod oblast', 'novgorodskaya oblast', 'novgorod', 'nvg'],
-        alias_cyr: ['новгородская область', 'новгород', 'новгородская', 'нвг'],
       },
       {
         id: 39,
@@ -941,7 +720,6 @@ export const routeData = [
         indexedName: 'orenburg_oblast',
         center: 'Orenburg',
         alias: ['orenburg oblast', 'orenburgskaya oblast', 'orenburg', 'orb'],
-        alias_cyr: ['оренбургская область', 'оренбург', 'оренбургская', 'орб'],
       },
       {
         id: 40,
@@ -949,7 +727,6 @@ export const routeData = [
         indexedName: 'oryol_oblast',
         center: 'Oryol',
         alias: ['oryol oblast', 'orlovskaya oblast', 'oryol', 'orel', 'orl'],
-        alias_cyr: ['орловская область', 'орел', 'орёл', 'орловская', 'орл'],
       },
       {
         id: 41,
@@ -957,7 +734,6 @@ export const routeData = [
         indexedName: 'penza_oblast',
         center: 'Penza',
         alias: ['penza oblast', 'penzenskaya oblast', 'penza', 'pnz'],
-        alias_cyr: ['пензенская область', 'пенза', 'пензенская', 'пнз'],
       },
       {
         id: 42,
@@ -965,7 +741,6 @@ export const routeData = [
         indexedName: 'pskov_oblast',
         center: 'Pskov',
         alias: ['pskov oblast', 'pskovskaya oblast', 'pskov', 'psk'],
-        alias_cyr: ['псковская область', 'псков', 'псковская', 'пск'],
       },
       {
         id: 43,
@@ -973,7 +748,6 @@ export const routeData = [
         indexedName: 'ryazan_oblast',
         center: 'Ryazan',
         alias: ['ryazan oblast', 'ryazanskaya oblast', 'ryazan', 'ryaz'],
-        alias_cyr: ['рязанская область', 'рязань', 'рязанская', 'ряз'],
       },
       {
         id: 44,
@@ -986,12 +760,6 @@ export const routeData = [
           'yuzhno-sakhalinsk',
           'yuskh',
         ],
-        alias_cyr: [
-          'сахалинская область',
-          'южно-сахалинск',
-          'сахалинская',
-          'юсх',
-        ],
       },
       {
         id: 45,
@@ -999,7 +767,6 @@ export const routeData = [
         indexedName: 'smolensk_oblast',
         center: 'Smolensk',
         alias: ['smolensk oblast', 'smolenskaya oblast', 'smolensk', 'smo'],
-        alias_cyr: ['смоленская область', 'смоленск', 'смоленская', 'смо'],
       },
       {
         id: 46,
@@ -1007,7 +774,6 @@ export const routeData = [
         indexedName: 'tambov_oblast',
         center: 'Tambov',
         alias: ['tambov oblast', 'tambovskaya oblast', 'tambov', 'tmb'],
-        alias_cyr: ['тамбовская область', 'тамбов', 'тамбовская', 'тмб'],
       },
       {
         id: 47,
@@ -1015,7 +781,6 @@ export const routeData = [
         indexedName: 'tver_oblast',
         center: 'Tver',
         alias: ['tver oblast', 'tverskaya oblast', 'tver', 'tve'],
-        alias_cyr: ['тверская область', 'тверь', 'тверская', 'тве'],
       },
       {
         id: 48,
@@ -1023,7 +788,6 @@ export const routeData = [
         indexedName: 'tula_oblast',
         center: 'Tula',
         alias: ['tula oblast', 'tulskaya oblast', 'tula', 'tul'],
-        alias_cyr: ['тульская область', 'тула', 'тульская', 'тул'],
       },
       {
         id: 49,
@@ -1037,13 +801,6 @@ export const routeData = [
           'tyum',
           'tobolsk',
         ],
-        alias_cyr: [
-          'тюменская область',
-          'тюмень',
-          'тюменская',
-          'тюм',
-          'тобольск',
-        ],
       },
       {
         id: 50,
@@ -1056,7 +813,6 @@ export const routeData = [
           'yaroslavl',
           'yarl',
         ],
-        alias_cyr: ['ярославская область', 'ярославль', 'ярославская', 'ярл'],
       },
       {
         id: 51,
@@ -1064,12 +820,6 @@ export const routeData = [
         indexedName: 'jewish_autonomous_oblast',
         center: 'Birobidzhan',
         alias: ['jewish oblast', 'evreyskaya oblast', 'birobidzhan', 'bir'],
-        alias_cyr: [
-          'еврейская автономная область',
-          'еврейская',
-          'биробиджан',
-          'бир',
-        ],
       },
       {
         id: 52,
@@ -1083,22 +833,16 @@ export const routeData = [
           'stav',
           'stv',
         ],
-        alias_cyr: [
-          'ставрополь',
-          'ставропольский край',
-          'ставрополье',
-          'став',
-          'ств',
-        ],
       },
     ],
   },
+
+  // KAZAKHSTAN
   {
     indexedName: 'kazakhstan',
     countryNameCyr: 'Қозоғистон',
     countryNameLat: "Qozog'iston",
     alias: ['kazakhstan', 'kazaxstan', 'kz', 'kaz'],
-    alias_cyr: ['қозоғистон', 'казахстан', 'кз', 'каз'],
     regions: [
       {
         id: 1,
@@ -1106,7 +850,6 @@ export const routeData = [
         indexedName: 'almaty',
         center: 'Almaty',
         alias: ['almaty', 'almati', 'alma-ata', 'almaata', 'almatinskiy'],
-        alias_cyr: ['олмаота', 'алматы', 'алмата', 'алматинский'],
       },
       {
         id: 2,
@@ -1114,7 +857,6 @@ export const routeData = [
         indexedName: 'astana',
         center: 'Astana',
         alias: ['astana', 'nur-sultan', 'nursultan', 'akmola'],
-        alias_cyr: ['астана', 'нурсултан', 'нур-султан', 'акмола'],
       },
       {
         id: 3,
@@ -1122,7 +864,6 @@ export const routeData = [
         indexedName: 'shymkent',
         center: 'Shymkent',
         alias: ['shymkent', 'chimkent', 'shimkent', 'turkestan region'],
-        alias_cyr: ['чимкент', 'шымкент', 'туркестан'],
       },
       {
         id: 4,
@@ -1130,7 +871,6 @@ export const routeData = [
         indexedName: 'aktau',
         center: 'Aktau',
         alias: ['aktau', 'mangistau', 'shevchenko'],
-        alias_cyr: ['актау', 'мангистау', 'шевченко'],
       },
       {
         id: 5,
@@ -1138,7 +878,6 @@ export const routeData = [
         indexedName: 'atyrau',
         center: 'Atyrau',
         alias: ['atyrau', 'atirau', 'guryev'],
-        alias_cyr: ['атырау', 'атирау', 'гурьев'],
       },
       {
         id: 6,
@@ -1146,7 +885,6 @@ export const routeData = [
         indexedName: 'aktobe',
         center: 'Aktobe',
         alias: ['aktobe', 'aktobe', 'aktyubinsk'],
-        alias_cyr: ['ақтўбе', 'актобе', 'актюбинск'],
       },
       {
         id: 7,
@@ -1154,7 +892,6 @@ export const routeData = [
         indexedName: 'karaganda',
         center: 'Karaganda',
         alias: ['karaganda', 'qaraganda'],
-        alias_cyr: ['қарағанда', 'караганда'],
       },
       {
         id: 8,
@@ -1162,7 +899,6 @@ export const routeData = [
         indexedName: 'taraz',
         center: 'Taraz',
         alias: ['taraz', 'jambul', 'zhambyl'],
-        alias_cyr: ['тараз', 'жамбул', 'жамбыл'],
       },
       {
         id: 9,
@@ -1170,7 +906,6 @@ export const routeData = [
         indexedName: 'kyzylorda',
         center: 'Kyzylorda',
         alias: ['kyzylorda', 'qizilorda', 'kizilorda'],
-        alias_cyr: ['қизилорда', 'кызылорда', 'кизилорда'],
       },
       {
         id: 10,
@@ -1178,16 +913,16 @@ export const routeData = [
         indexedName: 'pavlodar',
         center: 'Pavlodar',
         alias: ['pavlodar'],
-        alias_cyr: ['павлодар'],
       },
     ],
   },
+
+  // KYRGYZSTAN
   {
     indexedName: 'kyrgyzstan',
     countryNameCyr: 'Қирғизистон',
     countryNameLat: "Qirg'iziston",
     alias: ['kyrgyzstan', 'kirgiziya', 'kg'],
-    alias_cyr: ['қирғизистон', 'киргизия', 'қж'],
     regions: [
       {
         id: 1,
@@ -1195,7 +930,6 @@ export const routeData = [
         indexedName: 'bishkek',
         center: 'Bishkek',
         alias: ['bishkek', 'frunze', 'kg_capital'],
-        alias_cyr: ['бишкек', 'фрунзе', 'бшк'],
       },
       {
         id: 2,
@@ -1203,7 +937,6 @@ export const routeData = [
         indexedName: 'osh_city',
         center: "O'sh",
         alias: ['osh shahar', 'osh city'],
-        alias_cyr: ['ўш', 'ош', 'ош шаҳри'],
       },
       {
         id: 3,
@@ -1211,7 +944,6 @@ export const routeData = [
         indexedName: 'chuy',
         center: 'Bishkek',
         alias: ['chuy', 'chuy viloyati', 'tokmok', 'kant'],
-        alias_cyr: ['чуй', 'чуй вилояти', 'тўқмоқ', 'токмок', 'кант'],
       },
       {
         id: 4,
@@ -1219,7 +951,6 @@ export const routeData = [
         indexedName: 'osh_region',
         center: "O'sh",
         alias: ['osh', 'osh region', 'uzgen', 'qorasuv'],
-        alias_cyr: ['ўш вилояти', 'ошская область', 'ўзган', 'қорасув'],
       },
       {
         id: 5,
@@ -1227,7 +958,6 @@ export const routeData = [
         indexedName: 'jalal-abad',
         center: 'Jalolobod',
         alias: ['jalal-abad', 'jalolobod', 'dzhalal-abad', "toshko'mir"],
-        alias_cyr: ['жалолобод', 'жалал-абад', 'жалолобод вилояти', 'тошкўмир'],
       },
       {
         id: 6,
@@ -1235,7 +965,6 @@ export const routeData = [
         indexedName: 'issyk-kul',
         center: "Qoraqo'l",
         alias: ['issyk-kul', 'isik-kul', 'karakol', 'cholpon-ata'],
-        alias_cyr: ['иссиқкўл', 'иссик-кул', 'қорақол', 'чолпон-ата'],
       },
       {
         id: 7,
@@ -1243,7 +972,6 @@ export const routeData = [
         indexedName: 'naryn',
         center: 'Norin',
         alias: ['naryn', 'norin', 'at-bashi'],
-        alias_cyr: ['норин', 'нарын', 'норин вилояти'],
       },
       {
         id: 8,
@@ -1251,7 +979,6 @@ export const routeData = [
         indexedName: 'batken',
         center: 'Botken',
         alias: ['batken', 'botken', 'qizil-qiya', 'sulukta'],
-        alias_cyr: ['боткен', 'баткен', 'қизилқия', 'сулукта'],
       },
       {
         id: 9,
@@ -1259,16 +986,16 @@ export const routeData = [
         indexedName: 'talas',
         center: 'Talas',
         alias: ['talas', 'talas viloyati', 'manas'],
-        alias_cyr: ['талас', 'талас вилояти', 'манас'],
       },
     ],
   },
+
+  // TAJIKISTAN
   {
     indexedName: 'tajikistan',
     countryNameCyr: 'Тожикистон',
     countryNameLat: 'Tojikiston',
     alias: ['tajikistan', 'tadjikistan', 'tj'],
-    alias_cyr: ['тожикистон', 'таджикистан', 'тж'],
     regions: [
       {
         id: 1,
@@ -1276,7 +1003,6 @@ export const routeData = [
         indexedName: 'dushanbe',
         center: 'Dushanbe',
         alias: ['dushanbe', 'poytaxt', 'dsh'],
-        alias_cyr: ['душанбе', 'пойтахт', 'дшб'],
       },
       {
         id: 2,
@@ -1296,16 +1022,6 @@ export const routeData = [
           'istaron',
           'istarovshan',
         ],
-        alias_cyr: [
-          'суғд',
-          'согд',
-          'хужаand',
-          'худжанд',
-          'ленинобод',
-          'конибодом',
-          'исфара',
-          'панжакент',
-        ],
       },
       {
         id: 3,
@@ -1323,17 +1039,6 @@ export const routeData = [
           'norak',
           'nurek',
         ],
-        alias_cyr: [
-          'хатlon',
-          'хатлон',
-          'бохтар',
-          'қўрғонтепа',
-          'курган-тюбе',
-          'кулоб',
-          'куляб',
-          'норак',
-          'нурек',
-        ],
       },
       {
         id: 4,
@@ -1349,16 +1054,16 @@ export const routeData = [
           'pomir',
           'gbao',
         ],
-        alias_cyr: ['бадахшон', 'хоруғ', 'хоруг', 'памир', 'помир', 'гбао'],
       },
     ],
   },
+
+  // BELARUS
   {
     indexedName: 'belarus',
     countryNameCyr: 'Беларусь',
     countryNameLat: 'Belarusiya',
     alias: ['belarus', 'belorussiya', 'by'],
-    alias_cyr: ['беларусь', 'белоруссия', 'беларусия', 'бй'],
     regions: [
       {
         id: 1,
@@ -1366,7 +1071,6 @@ export const routeData = [
         indexedName: 'minsk_city',
         center: 'Minsk',
         alias: ['minsk city', 'poytaxt', 'msq'],
-        alias_cyr: ['минск шаҳри', 'мск'],
       },
       {
         id: 2,
@@ -1374,7 +1078,6 @@ export const routeData = [
         indexedName: 'minsk_region',
         center: 'Minsk',
         alias: ['minsk', 'minskaya', 'borisov', 'soligorsk'],
-        alias_cyr: ['минск', 'минская область', 'борисов', 'солигорск'],
       },
       {
         id: 3,
@@ -1382,13 +1085,6 @@ export const routeData = [
         indexedName: 'brest',
         center: 'Brest',
         alias: ['brest', 'brestskaya', 'pinsk', 'baranovichi'],
-        alias_cyr: [
-          'брест',
-          'брест вилояти',
-          'брестская область',
-          'пинск',
-          'барановичи',
-        ],
       },
       {
         id: 4,
@@ -1396,13 +1092,6 @@ export const routeData = [
         indexedName: 'vitebsk',
         center: 'Vitebsk',
         alias: ['vitebsk', 'vitsyebsk', 'polotsk', 'orsha'],
-        alias_cyr: [
-          'витебск',
-          'витебск вилояти',
-          'витебская область',
-          'полоцк',
-          'орша',
-        ],
       },
       {
         id: 5,
@@ -1410,13 +1099,6 @@ export const routeData = [
         indexedName: 'gomel',
         center: 'Gomel',
         alias: ['gomel', 'homyel', 'mozyr', 'zhlobin'],
-        alias_cyr: [
-          'гомель',
-          'гомель вилояти',
-          'гомельская область',
-          'мозырь',
-          'жлобин',
-        ],
       },
       {
         id: 6,
@@ -1424,13 +1106,6 @@ export const routeData = [
         indexedName: 'grodno',
         center: 'Grodno',
         alias: ['grodno', 'hrodna', 'lida', 'slonim'],
-        alias_cyr: [
-          'гродно',
-          'гродно вилояти',
-          'гродненская область',
-          'лида',
-          'слоним',
-        ],
       },
       {
         id: 7,
@@ -1438,16 +1113,16 @@ export const routeData = [
         indexedName: 'mogilev',
         center: 'Mogilev',
         alias: ['mogilev', 'mahibyow', 'bobruisk'],
-        alias_cyr: ['могилев', 'могилёв', 'могилев вилояти', 'бобруйск'],
       },
     ],
   },
+
+  // TURKEY
   {
     indexedName: 'turkey',
     countryNameCyr: 'Туркия',
     countryNameLat: 'Turkiya',
     alias: ['turkey', 'turkiye', 'turkiya', 'tr'],
-    alias_cyr: ['туркия', 'турция', 'тр'],
     regions: [
       {
         id: 1,
@@ -1455,7 +1130,6 @@ export const routeData = [
         indexedName: 'ankara',
         center: 'Ankara',
         alias: ['ankara', 'capital', 'angora'],
-        alias_cyr: ['анкара', 'пойтахт'],
       },
       {
         id: 2,
@@ -1463,7 +1137,6 @@ export const routeData = [
         indexedName: 'istanbul',
         center: 'Istanbul',
         alias: ['istanbul', 'stambul', 'constantinople'],
-        alias_cyr: ['истанбул', 'стамбул', 'истанбул'],
       },
       {
         id: 3,
@@ -1471,7 +1144,6 @@ export const routeData = [
         indexedName: 'izmir',
         center: 'Izmir',
         alias: ['izmir', 'smirna'],
-        alias_cyr: ['измир', 'измир'],
       },
       {
         id: 4,
@@ -1479,7 +1151,6 @@ export const routeData = [
         indexedName: 'antalya',
         center: 'Antalya',
         alias: ['antalya', 'antaliya', 'alanya'],
-        alias_cyr: ['анталья', 'анталия', 'аланья'],
       },
       {
         id: 5,
@@ -1487,7 +1158,6 @@ export const routeData = [
         indexedName: 'bursa',
         center: 'Bursa',
         alias: ['bursa', 'brusa'],
-        alias_cyr: ['бурса', 'бурса'],
       },
       {
         id: 6,
@@ -1495,7 +1165,6 @@ export const routeData = [
         indexedName: 'adana',
         center: 'Adana',
         alias: ['adana'],
-        alias_cyr: ['адана', 'адана'],
       },
       {
         id: 7,
@@ -1503,7 +1172,6 @@ export const routeData = [
         indexedName: 'gaziantep',
         center: 'Gaziantep',
         alias: ['gaziantep', 'antep'],
-        alias_cyr: ['газиантеп', 'антеп'],
       },
       {
         id: 8,
@@ -1511,7 +1179,6 @@ export const routeData = [
         indexedName: 'konya',
         center: 'Konya',
         alias: ['konya', 'iconium'],
-        alias_cyr: ['конья', 'қўня'],
       },
       {
         id: 9,
@@ -1519,7 +1186,159 @@ export const routeData = [
         indexedName: 'mersin',
         center: 'Mersin',
         alias: ['mersin', 'mersin'],
-        alias_cyr: ['мерсин', 'мерсин'],
+      },
+    ],
+  },
+
+  // AZERBAIJAN
+  {
+    indexedName: 'azerbaijan',
+    countryNameCyr: 'Озарбайжон',
+    countryNameLat: 'Ozarbayjon',
+    alias: ['azerbaijan', 'azerbaycan', 'az'],
+    regions: [
+      {
+        id: 1,
+        name: 'Baku',
+        indexedName: 'baku',
+        center: 'Baku',
+        alias: ['baku', 'baki', 'capital'],
+      },
+      {
+        id: 2,
+        name: 'Ganja',
+        indexedName: 'ganja',
+        center: 'Ganja',
+        alias: ['ganja', 'gancay', 'kirovabad'],
+      },
+      {
+        id: 3,
+        name: 'Sumqayit',
+        indexedName: 'sumqayit',
+        center: 'Sumqayit',
+        alias: ['sumqayit', 'sumgait'],
+      },
+      {
+        id: 4,
+        name: 'Lankaran',
+        indexedName: 'lankaran',
+        center: 'Lankaran',
+        alias: ['lankaran', 'lenkoran'],
+      },
+      {
+        id: 5,
+        name: 'Gabala',
+        indexedName: 'gabala',
+        center: 'Gabala',
+        alias: ['gabala', 'qabala'],
+      },
+      {
+        id: 6,
+        name: 'Nakhchivan',
+        indexedName: 'nakhchivan',
+        center: 'Nakhchivan',
+        alias: ['nakhchivan', 'naxcivan'],
+      },
+      {
+        id: 7,
+        name: 'Shaki',
+        indexedName: 'shaki',
+        center: 'Shaki',
+        alias: ['shaki', 'sheki'],
+      },
+      {
+        id: 8,
+        name: 'Shamakhi',
+        indexedName: 'shamakhi',
+        center: 'Shamakhi',
+        alias: ['shamakhi', 'samaxi'],
+      },
+      {
+        id: 9,
+        name: 'Mingachevir',
+        indexedName: 'mingachevir',
+        center: 'Mingachevir',
+        alias: ['mingachevir', 'mingecevir'],
+      },
+    ],
+  },
+
+  // POLAND
+  {
+    indexedName: 'poland',
+    countryNameCyr: 'Польша',
+    countryNameLat: 'Polsha',
+    alias: ['poland', 'polska', 'pl'],
+    regions: [
+      {
+        id: 1,
+        name: 'Warsaw',
+        indexedName: 'warsaw',
+        center: 'Warsaw',
+        alias: ['warsaw', 'warszawa', 'varshava', 'capital', 'varsava'],
+      },
+      {
+        id: 2,
+        name: 'Krakow',
+        indexedName: 'krakow',
+        center: 'Krakow',
+        alias: ['krakow', 'cracow', 'krakow'],
+      },
+      {
+        id: 3,
+        name: 'Lodz',
+        indexedName: 'lodz',
+        center: 'Lodz',
+        alias: ['lodz', 'wodzi'],
+      },
+      {
+        id: 4,
+        name: 'Wroclaw',
+        indexedName: 'wroclaw',
+        center: 'Wroclaw',
+        alias: ['wroclaw', 'breslau'],
+      },
+      {
+        id: 5,
+        name: 'Poznan',
+        indexedName: 'poznan',
+        center: 'Poznan',
+        alias: ['poznan', 'posen'],
+      },
+      {
+        id: 6,
+        name: 'Gdansk',
+        indexedName: 'gdansk',
+        center: 'Gdansk',
+        alias: ['gdansk', 'danzig'],
+      },
+      {
+        id: 7,
+        name: 'Szczecin',
+        indexedName: 'szczecin',
+        center: 'Szczecin',
+        alias: ['szczecin', 'stettin'],
+      },
+      {
+        id: 8,
+        name: 'Lublin',
+        indexedName: 'lublin',
+        center: 'Lublin',
+        alias: ['lublin'],
+      },
+      {
+        id: 9,
+        name: 'Katowice',
+        indexedName: 'katowice',
+        center: 'Katowice',
+        alias: ['katowice', 'katovise'],
+      },
+      {
+        id: 10,
+        name: 'Bialystok',
+        indexedName: 'bialystok',
+        center: 'Bialystok',
+        alias: ['bialystok', 'belostok'],
       },
     ],
   },

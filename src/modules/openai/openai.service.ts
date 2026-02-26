@@ -1,5 +1,7 @@
 import { CONFIG_OPENAI_TOKEN, OpenAIConfig } from '@/common/config/app.config';
 import { routeData } from '@/common/helpers/route-data';
+import { findRoute } from '@/common/utils/find-route';
+import { extractDataPrompt } from '@/common/utils/promts';
 import { MessageAnalyseDto } from '@/types/openai';
 import { Injectable, Inject } from '@nestjs/common';
 import OpenAI from 'openai';
@@ -36,13 +38,36 @@ export class OpenaiService {
     const classifieredMessage = await this.classifier(message.message);
     console.log(classifieredMessage);
     if (classifieredMessage.isLoad) {
-      const route = await this.extractRoute(classifieredMessage.cleanText);
-      const metaData = await this.extractMetaData(
-        classifieredMessage.cleanText
-      );
-      console.log(route, metaData, 'route, metaData');
+      // const route = await this.extractRoute(classifieredMessage.cleanText);
+      // const metaData = await this.extractMetaData(
+      //   classifieredMessage.cleanText
+      // );
 
-      return { classifieredMessage, route, metaData };
+      const data = await this.extractData(message.message);
+
+      console.log(data, 'route, metaData');
+
+      return {
+        classifieredMessage,
+        route: {
+          fromCountry: data.from.country,
+          toCountry: data.to.country,
+          fromRegion: data.from.region,
+          toRegion: data.to.region,
+        },
+        metaData: {
+          title: data?.title,
+          weight: data?.weight,
+          cargoUnit: data?.cargoUnit,
+          vehicleType: data?.vehicleType,
+          paymentType: data?.paymentType,
+          paymentAmount: data?.paymentAmount,
+          advancePayment: data?.advancePayment,
+          paymentCurrency: data?.paymentCurrency,
+          pickupDate: data?.pickupDate,
+          phone_number: data?.phone_number,
+        },
+      };
     } else {
       return { classifieredMessage, route: null, metaData: null };
     }
@@ -100,12 +125,18 @@ export class OpenaiService {
 
   // CLASSIFIER
   async classifier(text) {
-    if (!text) return { isLoad: false, type: 'unknown', confidence: 0 };
+    const MAX_LENGTH = 400;
+
+    const THRESHOLD = 5; // Chegara
+
     const ALLOWED_SYMBOLS = ['+', '-', '.', ',', '$', '%', ':', '/'];
+    if (!text) return { isLoad: false, type: 'no-text', confidence: 0 };
+    if (text.length > MAX_LENGTH)
+      return { isLoad: false, type: 'too-long', confidence: 0 };
 
     function removeEmojis(text) {
       const escaped = ALLOWED_SYMBOLS.map((s) =>
-        s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+        s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
       ) // regex escape
         .join('');
 
@@ -198,6 +229,12 @@ export class OpenaiService {
       'авто',
       'вес',
       'груз',
+      'оплата',
+      'аванс',
+      'погрузка',
+      'тент',
+      'реф',
+      'готов',
     ];
 
     // 2. Yuk bo'lmagan so'zlar (qattiq blok)
@@ -218,6 +255,8 @@ export class OpenaiService {
       'вакансия',
       'obuna',
       'обуна',
+      'guruhga',
+      'yozish',
     ];
 
     // STRICT ZERO CHECK
@@ -235,11 +274,11 @@ export class OpenaiService {
 
     // 2. Yo'nalish ko'rsatuvchi qo'shimchalar (Lotin va Kirill)
     // -dan, -ga, -дан, -га, shuningdek strelka belgisi →
-    const directionPattern = /([a-z'а-я]+(dan|ga|дан|га|qa|ка)|[→\-<>\|])/i;
+    const directionPattern = /([a-z'а-я]+(dan|ga|дан|га|qa|ка)|[→\-<>|])/i;
 
     // 3. Telefon raqami (Yuk xabarlarida deyarli har doim bo'ladi)
     const phonePattern =
-      /(\+?998|97|99|90|91|93|94|95|88|33|77)\s?\d{2,3}\s?\d{2,3}\s?\d{2}\s?\d{2}/;
+      /(?:\+?998|9[0-9]|88|99|97|93|94|95|91|90|33|77|50|20)\s?\d{3}\s?\d{2}\s?\d{2}/;
 
     // 4. Metrik pattern (Og'irlik yoki narx: 10т, 500$, 7млн)
     const metricPattern =
@@ -264,52 +303,26 @@ export class OpenaiService {
     // Maxsus: Agar xabarda → belgisi bo'lsa (Siz yuborgan msg1 kabi)
     if (cleanText.includes('→') || cleanText.includes('—')) score += 2;
 
-    const threshold = 5; // Chegara
-
     return {
-      isLoad: score >= threshold,
-      type: score >= threshold ? 'LOAD_POST' : 'REGULAR_MESSAGE',
+      isLoad: score >= THRESHOLD,
+      type: score >= THRESHOLD ? 'LOAD_POST' : 'REGULAR_MESSAGE',
       confidence: score,
       cleanText: cleanText,
       originalText: text.substring(0, 50) + '...', // Matndan namuna
     };
   }
 
-  // EXTRACT ROUTE FUNCTION
-  async extractRoute(text) {
-    const systemPrompt = `
-Siz logistika matnidan yo'nalish ajratuvchi parser-siz.
 
-Vazifa: matndan faqat 2 ta joyni aniqlang:
-- "from": yuk qayerdan (jo'nash)
-- "to": yuk qayerga (manzil)
 
-QATTIQ QOIDALAR:
-1) Javob faqat JSON bo'lsin. Hech qanday izoh, matn, markdown yo'q.
-2) JSON faqat shu 2 ta kalitdan iborat bo'lsin: "from" va "to".
-   - Boshqa hech qanday key chiqmasin (masalan fromCountry, regionFrom va h.k. chiqsa bu xato).
-3) "from" va "to" qiymati:
-   - faqat joy nomining o'zagi (shahar/viloyat/oblast) bo'lsin. Iloji bo'lsa viloyatni qaytar.
-   - qo'shimchalar bo'lmasin ("-dan", "-ga", "г.", "обл.", "республика" va h.k. olib tashla).
-   - from va to hechqachon bir xil bo'lmaydi.
-4) Ikkalasini ham inglizcha translit bilan qaytarishga harakat qil:
-   - Toshkent -> "tashkent"
-   - Samarqand -> "samarkand"
-   - Свердловская область -> "sverdlovsk"
-5) Agar joy topilmasa: null qaytar.
-6) Agar matnda faqat shahar bo'lsa ham, shaharni qaytar (viloyat shart emas).
-7) Agar bir nechta joy uchrasa:
-   - birinchi yo'nalish joyi = from
-   - oxirgi yo'nalish joyi = to
 
-Javob formati (Aynan shunday):
-{"from":"string or null","to":"string or null"}
-`;
+
+  
+  async extractData(text) {
     try {
       const completion = await this.client.chat.completions.create({
-        model: 'gpt-4o-mini', // Tezroq va arzonroq model ham yetarli
+        model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: extractDataPrompt },
           { role: 'user', content: text },
         ],
         response_format: { type: 'json_object' },
@@ -318,105 +331,49 @@ Javob formati (Aynan shunday):
 
       const rawResult = JSON.parse(completion.choices[0].message.content);
 
-      // GPT topgan nomlarni o'zimizning routeData bilan tekshiramiz
-      const source = await this.findInDatabase(rawResult.from);
-      const destination = await this.findInDatabase(rawResult.to);
+      if (rawResult.from === null && rawResult.to === null) {
+        return null;
+      }
+
+      const from = await findRoute(rawResult.from);
+      const to = await findRoute(rawResult.to);
 
       return {
-        fromCountry: source.country,
-        fromRegion: source.region,
-        toCountry: destination.country,
-        toRegion: destination.region,
+        from: {
+          country: from?.country,
+          region: from?.region,
+        },
+        to: {
+          country: to?.country,
+          region: to?.region,
+        },
+        title: rawResult?.title,
+        weight: rawResult?.weight,
+        cargoUnit: rawResult?.cargoUnit,
+        vehicleType: rawResult?.vehicleType,
+        paymentType: rawResult?.paymentType,
+        paymentAmount: rawResult?.paymentAmount,
+        advancePayment: rawResult?.advancePayment,
+        paymentCurrency: rawResult?.paymentCurrency,
+        pickupDate: rawResult?.pickupDate,
+        phone_number: rawResult?.phone_number,
       };
     } catch (error) {
       console.error('Xatolik:', error);
       return {
-        fromCountry: null,
-        fromRegion: null,
-        toCountry: null,
-        toRegion: null,
+        from: null,
+        to: null,
+        title: null,
+        weight: null,
+        cargoUnit: null,
+        vehicleType: null,
+        paymentType: null,
+        paymentAmount: null,
+        advancePayment: null,
+        paymentCurrency: null,
+        pickupDate: null,
+        phone_number: null,
       };
     }
-  }
-
-  async findInDatabase(locationName) {
-    if (!locationName) return { country: null, region: null };
-
-    const searchName = locationName.toLowerCase().trim();
-
-    for (const country of routeData) {
-      // 1. Regionlar ichidan qidirish
-      for (const region of country.regions) {
-        const allAliases = [...region.alias, ...region.alias_cyr];
-        if (allAliases.some((alias) => alias.toLowerCase() === searchName)) {
-          return { country: country.indexedName, region: region.indexedName };
-        }
-      }
-      // 2. Davlat aliaslari ichidan qidirish (agar region topilmasa)
-      const countryAliases = [...country.alias, ...country.alias_cyr];
-      if (countryAliases.some((alias) => alias.toLowerCase() === searchName)) {
-        return { country: country.indexedName, region: null };
-      }
-    }
-    return { country: null, region: null };
-  }
-
-  async extractMetaData(text) {
-    const SYSTEM_PROMPT = `
-You are a strict information extraction engine for logistics load posts (Uzbek/Russian mixed).
-Return ONLY valid JSON. No markdown, no comments.
-
-CRITICAL RULES:
-- "title" MUST be the cargo name only.
-- NEVER use cities, directions, routes, arrows (➞), customs info, or locations as title.
-- If cargo is written in parentheses — that is the title.
-- If cargo is written after "Груз:", "Yuk:", "Cargo:" — that is the title.
-- If you see "avans" or "аванс" set "advancePayment" to the amount.
-- If paymentCurrency is null and paymentAmount is less than 10000 set "paymentCurrency" usd.
-- Paymentamount should be more than 100
-- If vehicleType is "fura", set "tent". If vehicleType is "paravoz", "паровоз" set "locomative_truck". If vehicleType is "gazel", "газель" set "isuzu"
-- If you see words like "tayyor", "tayor", "готово", "срочно", so pickupdate is today. Also, pickupdate maybe like DD.MM.YYYY or DD.MM 
-- If length of phone number is 9 add +998. Phonenumber length will be more than 9
-
-
-Extract fields:
-title: string | null (cargo name ONLY, e.g. "Болт и гайки", "Текстиль", "Taxta", "Napitka", "Meva")
-weight: number | null (number only, e.g. "22")
-cargoUnit: "tons" | "pallet" | null
-vehicleType: tent | ref | isuzu | locomative_truck | string | null
-paymentType: "cash" | "online" | "combo" | null
-paymentAmount: string (number only) | null
-advancePayment: string (number only) | null
-paymentCurrency: "usd" | "sum" | null
-pickupDate: today | string | null
-phone_number: string
-
-IMPORTANT:
-- Do NOT include route, cities, or customs in ANY field.
-- Unknown strings -> ""
-- Unknown enums -> null
-`;
-
-    const prompt = await this.buildUserPrompt(text);
-    const response = await this.client.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      temperature: 0,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      response_format: { type: 'json_object' },
-    });
-
-    const json = response.choices[0]?.message?.content || '{}';
-    return JSON.parse(json);
-  }
-
-  async buildUserPrompt(text) {
-    return `
-Extract metadata from this load post:
-
-"""${text}"""
-`;
   }
 }

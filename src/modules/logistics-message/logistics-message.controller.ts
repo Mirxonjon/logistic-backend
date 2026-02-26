@@ -15,7 +15,12 @@ import {
   Sse,
 } from '@nestjs/common';
 import { PostsService } from './logistics-message.service';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
+import { Roles } from '@/modules/auth/decorators/roles.decorator';
+import { SendTelegramRawDto, SendTelegramStructuredDto } from '@/types/logistics-message';
+import { UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiExtraModels, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import {
   CreateLogisticMessageDto,
   GetLogisticsMessagesDto,
@@ -26,6 +31,7 @@ import { Observable, from, interval, map, switchMap } from 'rxjs';
 
 @ApiBearerAuth()
 @ApiTags('Posts')
+@ApiExtraModels(SendTelegramRawDto, SendTelegramStructuredDto)
 @Controller('post')
 export class PostsController {
   constructor(private readonly logisticMessageService: PostsService) {}
@@ -36,6 +42,24 @@ export class PostsController {
   async create(@Body() data: CreateLogisticMessageDto): Promise<any> {
 
     return this.logisticMessageService.create(data);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('DISPATCHER', 'ADMIN')
+  @Post('send-to-telegram')
+  @ApiOperation({ summary: 'Send message to Telegram groups (DISPATCHER)' })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(SendTelegramStructuredDto) },
+        // { $ref: getSchemaPath(SendTelegramRawDto) },
+      ],
+    },
+  })
+  @ApiOkResponse({ description: 'Message sent to active telegram groups' })
+  @ApiForbiddenResponse({ description: 'Access denied' })
+  async sendToTelegram(@Body() body:  SendTelegramStructuredDto) {
+    return this.logisticMessageService.sendToTelegram(body);
   }
 
   @Get('all')

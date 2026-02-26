@@ -19,6 +19,11 @@ import { TelegramService } from '@/external/telegram/telegram.service';
 import { OpenaiService } from '../openai/openai.service';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import {
+  SendTelegramRawDto,
+  SendTelegramStructuredDto,
+} from '@/types/logistics-message';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { LogisticsGateway } from '../notification-gateway/notification-gateway.gateway';
 import { classifyByRegex } from '@/common/utils/regex-classifier';
@@ -34,7 +39,8 @@ export class PostsService {
     private readonly gateway: LogisticsGateway,
     private readonly telegramService: TelegramService,
     private readonly openaiService: OpenaiService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService
   ) {}
 
   async create(data: CreateLogisticMessageDto): Promise<any> {
@@ -179,7 +185,61 @@ export class PostsService {
           `[${methodName}] Incomplete load detected — sending Telegram alert`
         );
 
-        const postLink = `https://api.logistic-dev.coachingzona.uz/v1/post/${savedMessage.id}`;
+        const incompleteMessageText = `
+*Asl xabar:*
+\`\`\`
+${text}
+\`\`\`
+
+*Aniqlangan ma'lumotlar:*
+\`\`\`
+• From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
+• From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
+• To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
+• To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
+• title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
+• weight: ${
+          openaiResponse?.metaData?.weight != null &&
+          !isNaN(Number(openaiResponse.metaData.weight))
+            ? `${Number(openaiResponse.metaData.weight)}`
+            : '❌ yo‘q'
+        }
+• cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
+• vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
+• paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
+• paymentAmount: ${
+          openaiResponse?.metaData?.paymentAmount != null &&
+          !isNaN(Number(openaiResponse.metaData.paymentAmount))
+            ? Number(openaiResponse.metaData.paymentAmount)
+            : '❌ yo‘q'
+        }
+• advancePayment: ${
+          openaiResponse?.metaData?.advancePayment != null &&
+          !isNaN(Number(openaiResponse.metaData.advancePayment))
+            ? Number(openaiResponse.metaData.advancePayment)
+            : '❌ yo‘q'
+        }
+• paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
+• pickupDate: ${
+          openaiResponse?.metaData?.pickupDate
+            ? openaiResponse.metaData.pickupDate
+            : '❌ yo‘q'
+        }
+• phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
+
+\`\`\`
+`;
+
+        await this.telegramService.sendToGroup(incompleteMessageText, 17906, {
+          parseMode: 'Markdown',
+        });
+        this.logger.debug(`[${methodName}] Telegram alert sent`);
+      }
+
+      if (isComplete && openaiResponse.classifieredMessage.isLoad) {
+        this.logger.warn(
+          `[${methodName}] Incomplete load detected — sending Telegram alert`
+        );
 
         const incompleteMessageText = `
 *Asl xabar:*
@@ -226,11 +286,12 @@ ${text}
 \`\`\`
 `;
 
-        await this.telegramService.sendToGroup(incompleteMessageText, 26, {
+        await this.telegramService.sendToGroup(incompleteMessageText, 17903, {
           parseMode: 'Markdown',
         });
         this.logger.debug(`[${methodName}] Telegram alert sent`);
       }
+
       this.logger.debug(
         `Method: ${methodName} - Saved DB Record: ${savedMessage.id}`
       );
@@ -633,6 +694,81 @@ ${text}
       message: 'Message updated successfully',
       data: updated,
     };
+  }
+
+  async sendToTelegram(body: SendTelegramStructuredDto) {
+    const groups = await this.prisma.telegramGroup.findMany({
+      where: { isActive: true },
+      select: { username: true },
+    });
+    const groupUsernames = groups.map((g) => g.username).filter(Boolean);
+    if (groupUsernames.length === 0) {
+      throw new BadRequestException('No active telegram groups found');
+    }
+
+    let message: string;
+
+    if (body.isMessage) {
+      message = body.message;
+      console.log(body, 'body', body.isMessage);
+    } else {
+      console.log('else');
+
+      message = this.buildTelegramMessage(body as any);
+    }
+
+    console.log(message, 'message');
+
+    const baseUrl = this.configService.get<string>('PYTHON_TELETHON_API_URL');
+    if (!baseUrl) {
+      throw new BadRequestException('Python service URL is not configured');
+    }
+
+    try {
+      const res = await axios.post(`${baseUrl.replace(/\/$/, '')}/send`, {
+        message,
+        groups: groupUsernames,
+      });
+      this.logger.log(`Sent to Telegram groups: ${groupUsernames.length}`);
+      return { success: true, sent: groupUsernames.length, service: res.data };
+    } catch (error) {
+      this.logger.error(`Failed to send to Telegram: ${error.message}`);
+      throw new BadRequestException(
+        'Failed to send message to Telegram service'
+      );
+    }
+  }
+
+  private buildTelegramMessage(body: SendTelegramStructuredDto): string {
+    const s = body as SendTelegramStructuredDto;
+    const lines: string[] = [];
+
+    if (s.title) lines.push(`📦 ${s.title}!`);
+    const from = [s.countryFrom, s.regionFrom].filter(Boolean).join(', ');
+    if (from) lines.push(`📍 From: ${from}`);
+    const to = [s.countryTo, s.regionTo].filter(Boolean).join(', ');
+    if (to) lines.push(`➡️ To: ${to}`);
+    if (s.weight || s.cargoUnit)
+      lines.push(
+        `⚖️ Weight: ${[s.weight, s.cargoUnit].filter(Boolean).join(' ')}`
+      );
+    if (s.vehicleType || s.vehicleBodyType)
+      lines.push(
+        `🚚 Vehicle: ${[s.vehicleType, s.vehicleBodyType].filter(Boolean).join(' / ')}`
+      );
+    if (s.paymentAmount || s.paymentCurrency || s.paymentType) {
+      const amount = [s.paymentAmount, (s.paymentCurrency || '').toUpperCase()]
+        .filter(Boolean)
+        .join(' ');
+      const pay = s.paymentType ? ` (${s.paymentType})` : '';
+      lines.push(`💰 Payment: ${amount}${pay}`);
+    }
+    if (s.capacity) lines.push(`📦 Capacity: ${s.capacity}`);
+    if (s.pickupDate) lines.push(`📅 Pickup: ${s.pickupDate}`);
+    if (s.phone_number) lines.push(`📞 Phone: ${s.phone_number}`);
+    if (s.description) lines.push(`📝 ${s.description}`);
+
+    return lines.join('\n');
   }
 
   async deleteMessage(id: number) {
