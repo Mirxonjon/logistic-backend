@@ -50,10 +50,10 @@ export class OpenaiService {
       return {
         classifieredMessage,
         route: {
-          fromCountry: data.from.country,
-          toCountry: data.to.country,
-          fromRegion: data.from.region,
-          toRegion: data.to.region,
+          fromCountry: data.from.country.indexedName,
+          toCountry: data.to.country.indexedName,
+          fromRegion: data.from.region.indexedName,
+          toRegion: data.to.region.indexedName,
         },
         metaData: {
           title: data?.title,

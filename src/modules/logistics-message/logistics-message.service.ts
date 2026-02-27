@@ -107,6 +107,8 @@ export class PostsService {
       const openaiResponse = await this.openaiService.messageAnalyse({
         message: text,
       });
+      console.log(openaiResponse, 'openaiResponse');
+      
 
       const baseData: Prisma.LogisticMessageCreateInput = {
         tgMessageId,
