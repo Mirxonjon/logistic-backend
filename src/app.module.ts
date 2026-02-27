@@ -19,7 +19,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { LogisticsGatewayModule } from './modules/notification-gateway/notifications-gateway.module';
 import { TelegramGroupModule } from './modules/telegram-group/telegram-group.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { TelegramQueueModule } from './modules/telegram-queue/telegram-queue.module';
+// import { TelegramQueueModule } from './modules/telegram-queue/telegram-queue.module';
 
 @Module({
   imports: [
@@ -45,7 +45,7 @@ import { TelegramQueueModule } from './modules/telegram-queue/telegram-queue.mod
     TelegramModule,
     LogisticsGatewayModule,
     AuthModule,
-    TelegramQueueModule,
+    // TelegramQueueModule,
   ],
   providers: [
     {
