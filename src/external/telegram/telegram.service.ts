@@ -36,7 +36,7 @@ export class TelegramService {
   ) {
     try {
       const chatId = process.env.TELEGRAM_GROUP_ID || '@news_day_scrapping';
-      const topicId = Number(process.env.TELEGRAM_GROUP_MESSAGES);
+      // const topicId = Number(topicId);
       if (!chatId) {
         // this.logger.error('TELEGRAM_CHAT_ID topilmadi!');
         return;
