@@ -41,7 +41,7 @@ export class PostsService {
     private readonly openaiService: OpenaiService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService
-  ) {}
+  ) { }
 
   async create(data: CreateLogisticMessageDto): Promise<any> {
     const methodName: string = this.create.name;
@@ -108,7 +108,7 @@ export class PostsService {
         message: text,
       });
       console.log(openaiResponse, 'openaiResponse');
-      
+
 
       const baseData: Prisma.LogisticMessageCreateInput = {
         tgMessageId,
@@ -123,9 +123,9 @@ export class PostsService {
 
       const isComplete = Boolean(
         openaiResponse?.route?.fromCountry &&
-          openaiResponse?.route?.toCountry &&
-          openaiResponse?.route?.fromRegion &&
-          openaiResponse?.route?.toRegion
+        openaiResponse?.route?.toCountry &&
+        openaiResponse?.route?.fromRegion &&
+        openaiResponse?.route?.toRegion
       );
       this.logger.debug(`[${methodName}] isComplete=${isComplete}`);
       let fullData = baseData;
@@ -146,7 +146,7 @@ export class PostsService {
           title: openaiResponse?.metaData?.title,
           weight:
             openaiResponse?.metaData?.weight != null &&
-            !isNaN(Number(openaiResponse.metaData.weight))
+              !isNaN(Number(openaiResponse.metaData.weight))
               ? Number(openaiResponse.metaData.weight)
               : undefined,
           cargoUnit: openaiResponse?.metaData?.cargoUnit,
@@ -155,12 +155,12 @@ export class PostsService {
           paymentType: openaiResponse?.metaData?.paymentType,
           paymentAmount:
             openaiResponse?.metaData?.paymentAmount != null &&
-            !isNaN(Number(openaiResponse.metaData.paymentAmount))
+              !isNaN(Number(openaiResponse.metaData.paymentAmount))
               ? Number(openaiResponse.metaData.paymentAmount)
               : undefined,
           advancePayment:
             openaiResponse?.metaData?.advancePayment != null &&
-            !isNaN(Number(openaiResponse.metaData.advancePayment))
+              !isNaN(Number(openaiResponse.metaData.advancePayment))
               ? Number(openaiResponse.metaData.advancePayment)
               : undefined,
           paymentCurrency: openaiResponse?.metaData?.paymentCurrency,
@@ -200,33 +200,29 @@ ${text}
 • To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
 • To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
 • title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
-• weight: ${
-          openaiResponse?.metaData?.weight != null &&
-          !isNaN(Number(openaiResponse.metaData.weight))
+• weight: ${openaiResponse?.metaData?.weight != null &&
+            !isNaN(Number(openaiResponse.metaData.weight))
             ? `${Number(openaiResponse.metaData.weight)}`
             : '❌ yo‘q'
-        }
+          }
 • cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
 • vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
 • paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
-• paymentAmount: ${
-          openaiResponse?.metaData?.paymentAmount != null &&
-          !isNaN(Number(openaiResponse.metaData.paymentAmount))
+• paymentAmount: ${openaiResponse?.metaData?.paymentAmount != null &&
+            !isNaN(Number(openaiResponse.metaData.paymentAmount))
             ? Number(openaiResponse.metaData.paymentAmount)
             : '❌ yo‘q'
-        }
-• advancePayment: ${
-          openaiResponse?.metaData?.advancePayment != null &&
-          !isNaN(Number(openaiResponse.metaData.advancePayment))
+          }
+• advancePayment: ${openaiResponse?.metaData?.advancePayment != null &&
+            !isNaN(Number(openaiResponse.metaData.advancePayment))
             ? Number(openaiResponse.metaData.advancePayment)
             : '❌ yo‘q'
-        }
+          }
 • paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
-• pickupDate: ${
-          openaiResponse?.metaData?.pickupDate
+• pickupDate: ${openaiResponse?.metaData?.pickupDate
             ? openaiResponse.metaData.pickupDate
             : '❌ yo‘q'
-        }
+          }
 • phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
 
 \`\`\`
@@ -256,33 +252,29 @@ ${text}
 • To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
 • To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
 • title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
-• weight: ${
-          openaiResponse?.metaData?.weight != null &&
-          !isNaN(Number(openaiResponse.metaData.weight))
+• weight: ${openaiResponse?.metaData?.weight != null &&
+            !isNaN(Number(openaiResponse.metaData.weight))
             ? `${Number(openaiResponse.metaData.weight)}`
             : '❌ yo‘q'
-        }
+          }
 • cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
 • vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
 • paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
-• paymentAmount: ${
-          openaiResponse?.metaData?.paymentAmount != null &&
-          !isNaN(Number(openaiResponse.metaData.paymentAmount))
+• paymentAmount: ${openaiResponse?.metaData?.paymentAmount != null &&
+            !isNaN(Number(openaiResponse.metaData.paymentAmount))
             ? Number(openaiResponse.metaData.paymentAmount)
             : '❌ yo‘q'
-        }
-• advancePayment: ${
-          openaiResponse?.metaData?.advancePayment != null &&
-          !isNaN(Number(openaiResponse.metaData.advancePayment))
+          }
+• advancePayment: ${openaiResponse?.metaData?.advancePayment != null &&
+            !isNaN(Number(openaiResponse.metaData.advancePayment))
             ? Number(openaiResponse.metaData.advancePayment)
             : '❌ yo‘q'
-        }
+          }
 • paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
-• pickupDate: ${
-          openaiResponse?.metaData?.pickupDate
+• pickupDate: ${openaiResponse?.metaData?.pickupDate
             ? openaiResponse.metaData.pickupDate
             : '❌ yo‘q'
-        }
+          }
 • phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
 
 \`\`\`
@@ -727,7 +719,13 @@ ${text}
     }
 
     try {
-      const res = await axios.post(`${baseUrl.replace(/\/$/, '')}/send`, {
+      console.log(
+        'Sending to Telegram groups:',
+        groupUsernames,
+        baseUrl.replace(/\/$/, '')
+      );
+
+      const res = await axios.post(`${baseUrl.replace(/\/$/, '')}/mtproto/send`, {
         message,
         groups: groupUsernames,
       });
