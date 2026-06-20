@@ -44,78 +44,78 @@ export class PostsService {
   ) { }
 
   async create(data: CreateLogisticMessageDto): Promise<any> {
-    const methodName: string = this.create.name;
-    console.log(CreateLogisticMessageDto, 'data');
+    const { tgMessageId, channelName, text, date, views } = data;
+    const tag = `[create tg=${tgMessageId}@${channelName}]`;
+    const startedAt = Date.now();
+    const elapsed = () => `${Date.now() - startedAt}ms`;
 
-    this.logger.debug(`[${methodName}] Incoming request`);
-    this.logger.debug(`[${methodName}] Payload: ${JSON.stringify(data)}`);
+    this.logger.log(
+      `${tag} STEP 1 incoming text_len=${text?.length ?? 0} date=${date ?? '-'} views=${views ?? '-'}`
+    );
 
     try {
-      const { tgMessageId, channelName, text, date, views } = data;
-      this.logger.debug(
-        `[${methodName}] Checking duplicate by tgMessageId=${tgMessageId}, channel=${channelName}`
-      );
-      // 1️⃣ Xabar bazada bormi? (duplicate check)
+      // -------------------------------------------------------------------
+      // STEP 2 — duplicate check by (tgMessageId, channelName)
+      // -------------------------------------------------------------------
+      this.logger.debug(`${tag} STEP 2 dup-check (tgMessageId+channel)`);
       const existing = await this.prisma.logisticMessage.findFirst({
-        where: {
-          tgMessageId,
-          channelName,
-        },
+        where: { tgMessageId, channelName },
       });
 
       if (existing) {
-        this.logger.warn(
-          `[${methodName}] Duplicate found  (tgMessageId=${tgMessageId}, channel=${channelName})`
-        );
         const updated = await this.prisma.logisticMessage.update({
-          where: {
-            id: existing.id,
-          },
-          data: {
-            sentToTelegramAt: new Date(),
-          },
+          where: { id: existing.id },
+          data: { sentToTelegramAt: new Date() },
         });
+        this.logger.warn(
+          `${tag} STEP 2 SKIP duplicate-tgMessageId existing.id=${existing.id} aiStatus=${existing.aiStatus} (${elapsed()})`
+        );
         return {
           skipped: true,
           reason: 'duplicate-tgMessageId',
           existing: updated,
         };
       }
-      this.logger.debug(`[${methodName}] Checking duplicate by text hash`);
+      this.logger.debug(`${tag} STEP 2 OK no dup`);
+
+      // -------------------------------------------------------------------
+      // STEP 3 — duplicate check by exact text
+      // -------------------------------------------------------------------
+      this.logger.debug(`${tag} STEP 3 dup-check (text)`);
       const existingText = await this.prisma.logisticMessage.findFirst({
-        where: {
-          text: text,
-        },
+        where: { text },
       });
 
       if (existingText) {
-        this.logger.warn(
-          `[${methodName}] Duplicate text found (tgMessageId=${existingText.tgMessageId}, channel=${existingText.channelName})`
-        );
-
         const updated = await this.prisma.logisticMessage.update({
-          where: {
-            id: existingText.id,
-          },
-          data: {
-            sentToTelegramAt: new Date(),
-          },
+          where: { id: existingText.id },
+          data: { sentToTelegramAt: new Date() },
         });
+        this.logger.warn(
+          `${tag} STEP 3 SKIP duplicate-text existing.id=${existingText.id} sourceChannel=${existingText.channelName} (${elapsed()})`
+        );
         return {
           skipped: true,
           reason: 'duplicate-text',
           existing: updated,
         };
       }
-      this.logger.debug(`[${methodName}] Sending text to OpenAI analyser`);
+      this.logger.debug(`${tag} STEP 3 OK no dup`);
+
+      // -------------------------------------------------------------------
+      // STEP 4 — OpenAI classify + extract
+      // -------------------------------------------------------------------
+      this.logger.debug(`${tag} STEP 4 openai analyse...`);
       const openaiResponse = await this.openaiService.messageAnalyse({
         message: text,
       });
-      console.log(openaiResponse, 'openaiResponse');
+      this.logger.log(
+        `${tag} STEP 4 openai isLoad=${openaiResponse.classifieredMessage.isLoad} type=${openaiResponse.classifieredMessage.type} confidence=${openaiResponse.classifieredMessage.confidence ?? '-'}`
+      );
 
-
-      // A "load" must carry a phone number. If the classifier flagged it as a
-      // load but no phone was extracted, downgrade it to a regular message.
+      // -------------------------------------------------------------------
+      // STEP 5 — phone gate (load must carry a phone number)
+      // -------------------------------------------------------------------
       const rawPhone = openaiResponse?.metaData?.phone_number;
       const hasPhone =
         typeof rawPhone === 'string' && rawPhone.trim().length > 0;
@@ -123,9 +123,15 @@ export class PostsService {
         openaiResponse.classifieredMessage.isLoad && hasPhone;
 
       if (openaiResponse.classifieredMessage.isLoad && !hasPhone) {
-        this.logger.debug(
-          `[${methodName}] Classifier said load but no phone_number — treating as REGULAR_MESSAGE`
+        this.logger.warn(
+          `${tag} STEP 5 NO phone — downgrading LOAD_POST → REGULAR_MESSAGE`
         );
+      } else if (effectiveIsLoad) {
+        this.logger.log(
+          `${tag} STEP 5 phone=${rawPhone} → effectiveLoad=true`
+        );
+      } else {
+        this.logger.debug(`${tag} STEP 5 not-load (regular message)`);
       }
 
       const baseData: Prisma.LogisticMessageCreateInput = {
@@ -139,19 +145,23 @@ export class PostsService {
         sentToTelegramAt: new Date(),
       };
 
+      // -------------------------------------------------------------------
+      // STEP 6 — route completeness
+      // -------------------------------------------------------------------
       const isComplete = Boolean(
         openaiResponse?.route?.fromCountry &&
         openaiResponse?.route?.toCountry &&
         openaiResponse?.route?.fromRegion &&
         openaiResponse?.route?.toRegion
       );
-      this.logger.debug(`[${methodName}] isComplete=${isComplete}`);
+      if (effectiveIsLoad) {
+        this.logger.log(
+          `${tag} STEP 6 route from=${openaiResponse?.route?.fromCountry ?? '?'}/${openaiResponse?.route?.fromRegion ?? '?'} to=${openaiResponse?.route?.toCountry ?? '?'}/${openaiResponse?.route?.toRegion ?? '?'} isComplete=${isComplete}`
+        );
+      }
       let fullData = baseData;
 
       if (effectiveIsLoad) {
-        this.logger.debug(
-          `[${methodName}] Load post detected — enriching payload`
-        );
         fullData = {
           ...baseData,
 
@@ -192,17 +202,23 @@ export class PostsService {
           isComplete,
         };
       }
-      this.logger.debug(`[${methodName}] Saving message to database`);
+      // -------------------------------------------------------------------
+      // STEP 7 — persist
+      // -------------------------------------------------------------------
+      this.logger.debug(`${tag} STEP 7 saving aiStatus=${fullData.aiStatus}`);
       const savedMessage = await this.prisma.logisticMessage.create({
         data: fullData,
       });
-
       this.logger.log(
-        `[${methodName}] Saved successfully id=${savedMessage.id}`
+        `${tag} STEP 7 SAVED id=${savedMessage.id} aiStatus=${savedMessage.aiStatus} isComplete=${isComplete}`
       );
+
+      // -------------------------------------------------------------------
+      // STEP 8 — Telegram alert (only for effective loads)
+      // -------------------------------------------------------------------
       if (!isComplete && effectiveIsLoad) {
         this.logger.warn(
-          `[${methodName}] Incomplete load detected — sending Telegram alert`
+          `${tag} STEP 8 telegram alert → topic=17906 (incomplete load)`
         );
 
         const incompleteMessageText = `
@@ -249,12 +265,12 @@ ${text}
         await this.telegramService.sendToGroup(incompleteMessageText, 17906, {
           parseMode: 'Markdown',
         });
-        this.logger.debug(`[${methodName}] Telegram alert sent`);
+        this.logger.debug(`${tag} STEP 8 telegram alert sent (incomplete)`);
       }
 
       if (isComplete && effectiveIsLoad) {
         this.logger.warn(
-          `[${methodName}] Complete load detected — sending Telegram alert`
+          `${tag} STEP 8 telegram alert → topic=17903 (complete load)`
         );
 
         const completeMessageText = `
@@ -301,15 +317,17 @@ ${text}
         await this.telegramService.sendToGroup(completeMessageText, 17903, {
           parseMode: 'Markdown',
         });
-        this.logger.debug(`[${methodName}] Telegram alert sent`);
+        this.logger.debug(`${tag} STEP 8 telegram alert sent (complete)`);
       }
 
-      this.logger.debug(
-        `Method: ${methodName} - Saved DB Record: ${savedMessage.id}`
+      this.logger.log(
+        `${tag} DONE id=${savedMessage.id} aiStatus=${savedMessage.aiStatus} in ${elapsed()}`
       );
+      return { saved: true, id: savedMessage.id, aiStatus: savedMessage.aiStatus, isComplete };
     } catch (error) {
       this.logger.error(
-        `Method: ${methodName} - Error creating logistic message: ${error.message}`
+        `${tag} FAIL ${error?.name ?? 'Error'}: ${error?.message} (after ${elapsed()})`,
+        error?.stack
       );
       throw error;
     }
