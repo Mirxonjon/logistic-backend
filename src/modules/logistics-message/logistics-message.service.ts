@@ -69,15 +69,17 @@ export class PostsService {
         );
         const updated = await this.prisma.logisticMessage.update({
           where: {
-            id: existing?.id,
+            id: existing.id,
           },
           data: {
             sentToTelegramAt: new Date(),
           },
         });
-        throw new BadRequestException(
-          `Xabar allaqachon mavjud: tgMessageId=${tgMessageId}, channel=${channelName}`
-        );
+        return {
+          skipped: true,
+          reason: 'duplicate-tgMessageId',
+          existing: updated,
+        };
       }
       this.logger.debug(`[${methodName}] Checking duplicate by text hash`);
       const existingText = await this.prisma.logisticMessage.findFirst({
@@ -99,9 +101,11 @@ export class PostsService {
             sentToTelegramAt: new Date(),
           },
         });
-        throw new BadRequestException(
-          `Xabar allaqachon mavjud: tgMessageId=${existingText.tgMessageId}, channel=${existingText.channelName}`
-        );
+        return {
+          skipped: true,
+          reason: 'duplicate-text',
+          existing: updated,
+        };
       }
       this.logger.debug(`[${methodName}] Sending text to OpenAI analyser`);
       const openaiResponse = await this.openaiService.messageAnalyse({
