@@ -6,7 +6,7 @@ import {
   dbConfig,
   minioConfig,
   openAIConfig,
-  telegramGatewayConfig,
+  authCodeConfig,
 } from './common/config/app.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_FILTER } from '@nestjs/core';
@@ -26,7 +26,7 @@ import { AuthModule } from './modules/auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, minioConfig, openAIConfig, TelegramConfig, telegramGatewayConfig],
+      load: [appConfig, dbConfig, minioConfig, openAIConfig, TelegramConfig, authCodeConfig],
     }),
     TelegrafModule.forRoot({
       token: process.env.TELEGRAM_BOT_TOKEN,

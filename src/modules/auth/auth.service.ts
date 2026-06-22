@@ -11,10 +11,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '@/modules/prisma/prisma.service';
-import { TelegramGatewayService } from '@/external/telegram-gateway/telegram-gateway.service';
+import { SmsService } from '@/external/eskiz/sms.service';
 import {
-  CONFIG_TELEGRAM_GATEWAY_TOKEN,
-  TelegramGatewayConfig,
+  AuthCodeConfig,
+  CONFIG_AUTH_CODE_TOKEN,
 } from '@/common/config/app.config';
 import {
   AdminLoginDto,
@@ -41,17 +41,15 @@ const PHONE_REGEX = /^\+998\d{9}$/;
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly gatewayCfg: TelegramGatewayConfig;
+  private readonly codeCfg: AuthCodeConfig;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly telegramGateway: TelegramGatewayService,
+    private readonly sms: SmsService,
     configService: ConfigService,
   ) {
-    this.gatewayCfg = configService.get<TelegramGatewayConfig>(
-      CONFIG_TELEGRAM_GATEWAY_TOKEN,
-    );
+    this.codeCfg = configService.get<AuthCodeConfig>(CONFIG_AUTH_CODE_TOKEN);
   }
 
   // ---------------------------------------------------------------------------
@@ -155,8 +153,8 @@ export class AuthService {
     });
     if (latest) {
       const ageSec = (Date.now() - latest.createdAt.getTime()) / 1000;
-      if (ageSec < this.gatewayCfg.resendCooldownSeconds) {
-        const wait = Math.ceil(this.gatewayCfg.resendCooldownSeconds - ageSec);
+      if (ageSec < this.codeCfg.resendCooldownSeconds) {
+        const wait = Math.ceil(this.codeCfg.resendCooldownSeconds - ageSec);
         throw new BadRequestException(
           `Please wait ${wait}s before requesting another code`,
         );
@@ -165,7 +163,7 @@ export class AuthService {
 
     const code = this.generateCode();
     const codeHash = await bcrypt.hash(code, 8);
-    const expiresAt = new Date(Date.now() + this.gatewayCfg.ttlSeconds * 1000);
+    const expiresAt = new Date(Date.now() + this.codeCfg.ttlSeconds * 1000);
 
     await this.prisma.$transaction([
       this.prisma.verificationCode.updateMany({
@@ -177,16 +175,21 @@ export class AuthService {
           phone,
           codeHash,
           purpose,
-          attemptsLeft: this.gatewayCfg.maxAttempts,
+          attemptsLeft: this.codeCfg.maxAttempts,
           expiresAt,
         },
       }),
     ]);
 
-    await this.telegramGateway.sendVerificationCode(phone, code);
+    const sent = await this.sms.sendOtp(phone, code);
+    if (!sent) {
+      throw new BadRequestException(
+        'Failed to deliver SMS verification code. Please try again.',
+      );
+    }
     this.logger.log(`Sent verification code to ${phone} (${purpose})`);
 
-    return { sent: true, expiresInSeconds: this.gatewayCfg.ttlSeconds };
+    return { sent: true, expiresInSeconds: this.codeCfg.ttlSeconds };
   }
 
   async verifyCode(dto: VerifyCodeDto): Promise<{ verificationToken: string }> {

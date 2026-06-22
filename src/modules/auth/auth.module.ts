@@ -7,7 +7,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { SubscriptionExpireCron } from './cron/subscription-expire.cron';
 import { PrismaModule } from '@/modules/prisma/prisma.module';
 import { JwtConfig } from '@/common/config/app.config';
-import { TelegramGatewayModule } from '@/external/telegram-gateway/telegram-gateway.module';
+import { EskizModule } from '@/external/eskiz/eskiz.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { TelegramGatewayModule } from '@/external/telegram-gateway/telegram-gate
       secret: JwtConfig.secret,
       signOptions: { expiresIn: JwtConfig.expiresIn },
     }),
-    TelegramGatewayModule,
+    EskizModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, SubscriptionExpireCron],

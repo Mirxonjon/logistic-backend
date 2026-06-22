@@ -96,21 +96,20 @@ export const TelegramConfig=() => ({
   frontendUrl: process.env.FRONTEND_BASE_URL,
 });
 
-export const CONFIG_TELEGRAM_GATEWAY_TOKEN = 'telegramGateway';
-export const telegramGatewayConfig = registerAs(
-  CONFIG_TELEGRAM_GATEWAY_TOKEN,
-  (): TelegramGatewayConfig => ({
-    apiToken: process.env.TELEGRAM_GATEWAY_API_TOKEN || '',
-    senderUsername: process.env.TELEGRAM_GATEWAY_SENDER_USERNAME || undefined,
+export const CONFIG_AUTH_CODE_TOKEN = 'authCode';
+export const authCodeConfig = registerAs(
+  CONFIG_AUTH_CODE_TOKEN,
+  (): AuthCodeConfig => ({
     ttlSeconds: parseInt(process.env.AUTH_CODE_TTL_SECONDS || '300', 10),
     maxAttempts: parseInt(process.env.AUTH_CODE_MAX_ATTEMPTS || '3', 10),
-    resendCooldownSeconds: parseInt(process.env.AUTH_CODE_RESEND_COOLDOWN_SECONDS || '60', 10),
+    resendCooldownSeconds: parseInt(
+      process.env.AUTH_CODE_RESEND_COOLDOWN_SECONDS || '60',
+      10
+    ),
   })
 );
 
-export type TelegramGatewayConfig = {
-  apiToken: string;
-  senderUsername?: string;
+export type AuthCodeConfig = {
   ttlSeconds: number;
   maxAttempts: number;
   resendCooldownSeconds: number;
