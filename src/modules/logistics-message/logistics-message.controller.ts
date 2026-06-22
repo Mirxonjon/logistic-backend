@@ -58,8 +58,11 @@ export class PostsController {
   })
   @ApiOkResponse({ description: 'Message sent to active telegram groups' })
   @ApiForbiddenResponse({ description: 'Access denied' })
-  async sendToTelegram(@Body() body:  SendTelegramStructuredDto) {
-    return this.logisticMessageService.sendToTelegram(body);
+  async sendToTelegram(
+    @Body() body: SendTelegramStructuredDto,
+    @Req() req: { user: { userId: number; role: 'ADMIN' | 'DISPATCHER' } }
+  ) {
+    return this.logisticMessageService.sendToTelegram(body, req.user.userId);
   }
 
   @Get('all')

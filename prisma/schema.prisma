@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PostSource {
+  SCRAPING
+  DISPATCHER
+}
+
 model LogisticMessage {
   id                Int       @id @default(autoincrement())
   tgMessageId       Int       // Telegram xabar ID
@@ -38,9 +43,16 @@ model LogisticMessage {
   sentToTelegramAt  DateTime?
   isComplete        Boolean @default(false)
 
+  source            PostSource @default(SCRAPING)
+  createdById       Int?
+  createdBy         User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
   isActual          Boolean    @default(true) // xabar yangimi yoki yo‘qmi
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+
+  @@index([source])
+  @@index([createdById])
 }
 
 model TelegramGroup {
@@ -64,6 +76,8 @@ model User {
   paymentDate DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  posts       LogisticMessage[]
 }
 
 enum UserRole {

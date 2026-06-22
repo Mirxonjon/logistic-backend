@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class SendTelegramStructuredDto {
@@ -97,18 +98,21 @@ export class SendTelegramStructuredDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({
-    description: 'Raw message text to send to Telegram groups',
-    example: '🔥 Yuk bor! Toshkent → Moskva...',
+  @ApiPropertyOptional({
+    description:
+      'Raw message text. Required only when isMessage=true. Otherwise the backend builds the message from the structured fields above.',
   })
+  @ValidateIf((o) => o.isMessage === true)
   @IsString()
   @MinLength(1)
-  message: string;
+  message?: string;
 
-  @ApiProperty({
-    description: 'Whether this is a message post or not',
-    example: true,
+  @ApiPropertyOptional({
+    description:
+      'true → use the raw `message` field as-is. false/omitted → backend builds the message from the structured fields above.',
+    default: false,
   })
+  @IsOptional()
   @IsBoolean()
-  isMessage: boolean;
+  isMessage?: boolean;
 }

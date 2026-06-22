@@ -30,6 +30,16 @@ import { classifyByRegex } from '@/common/utils/regex-classifier';
 import { Prisma } from '@prisma/client';
 import { routeData } from '@/common/helpers/route-data';
 
+// Fields of the dispatcher who created a post that are safe to expose in API
+// responses (password and other sensitive columns are deliberately omitted).
+const CREATED_BY_SELECT: Prisma.UserSelect = {
+  id: true,
+  fullName: true,
+  username: true,
+  phone: true,
+  role: true,
+};
+
 @Injectable()
 export class PostsService {
   private logger = new Logger(PostsService.name);
@@ -472,12 +482,13 @@ ${text}
     // =====================
     // DB QUERIES (parallel)
     // =====================
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.logisticMessage.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: { createdBy: { select: CREATED_BY_SELECT } },
       }),
       this.prisma.logisticMessage.count({ where }),
     ]);
@@ -627,12 +638,13 @@ ${text}
     // =====================
     // DB QUERIES (parallel)
     // =====================
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.logisticMessage.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        include: { createdBy: { select: CREATED_BY_SELECT } },
       }),
       this.prisma.logisticMessage.count({ where }),
     ]);
@@ -667,6 +679,9 @@ ${text}
         sentAgo: await this.getTimeAgo(message.sentToTelegramAt),
         sentToTelegramAt: message.sentToTelegramAt,
 
+        source: message.source,
+        createdBy: message.createdBy,
+
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
       };
@@ -690,6 +705,7 @@ ${text}
   async getMessageById(id: number) {
     const message = await this.prisma.logisticMessage.findUnique({
       where: { id },
+      include: { createdBy: { select: CREATED_BY_SELECT } },
     });
 
     if (!message) {
@@ -726,7 +742,7 @@ ${text}
     };
   }
 
-  async sendToTelegram(body: SendTelegramStructuredDto) {
+  async sendToTelegram(body: SendTelegramStructuredDto, dispatcherId: number) {
     // ---------------------------------------------------------------------
     // Telegram dispatch temporarily disabled — this endpoint currently only
     // accepts dispatcher input and persists it to the DB as a LOAD_POST.
@@ -746,8 +762,10 @@ ${text}
       : this.buildTelegramMessage(body as any);
 
     // Persist the dispatcher-submitted post directly — no classifier, no OpenAI.
-    const saved = await this.persistDispatcherPost(body, message);
-    this.logger.log(`Dispatcher post saved id=${saved.id}`);
+    const saved = await this.persistDispatcherPost(body, message, dispatcherId);
+    this.logger.log(
+      `Dispatcher post saved id=${saved.id} createdById=${dispatcherId}`
+    );
 
     // ---------------------------------------------------------------------
     // const baseUrl = this.configService.get<string>('PYTHON_TELETHON_API_URL');
@@ -784,7 +802,8 @@ ${text}
 
   private async persistDispatcherPost(
     body: SendTelegramStructuredDto,
-    finalText: string
+    finalText: string,
+    dispatcherId: number
   ) {
     const toNum = (v: unknown): number | undefined =>
       v != null && v !== '' && !isNaN(Number(v)) ? Number(v) : undefined;
@@ -803,6 +822,9 @@ ${text}
         aiStatus: 'LOAD_POST',
         structured: body as unknown as Prisma.InputJsonValue,
         sentToTelegramAt: new Date(),
+
+        source: 'DISPATCHER',
+        createdById: dispatcherId,
 
         countryFrom: body.countryFrom,
         countryTo: body.countryTo,
@@ -823,7 +845,7 @@ ${text}
 
         isComplete,
       },
-      select: { id: true },
+      select: { id: true, source: true, createdById: true },
     });
   }
 
