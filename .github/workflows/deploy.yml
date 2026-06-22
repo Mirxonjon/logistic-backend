@@ -1,0 +1,56 @@
+name: Deploy logistic-backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  # ============================
+  # PROD DEPLOY
+  # ============================
+  deploy_prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy PROD
+        run: |
+          ssh -o StrictHostKeyChecking=no root@84.247.184.118 << 'EOF'
+            set -e
+            export PATH="$HOME/.nvm/versions/node/$(nvm version 2>/dev/null || ls $HOME/.nvm/versions/node 2>/dev/null | tail -n1)/bin:$PATH"
+
+            cd /home/Projects/dev/logistic-backend/
+
+            echo "▶ Pulling latest main..."
+            git fetch --all --prune
+            git reset --hard origin/main
+            git clean -fd
+
+            echo "▶ Installing deps..."
+            npm ci --omit=optional
+
+            echo "▶ Prisma generate + migrate..."
+            npx prisma generate
+            npx prisma migrate deploy
+
+            echo "▶ Building NestJS..."
+            rm -rf dist
+            npx nest build
+
+            echo "▶ Reloading PM2..."
+            pm2 reload logistic-backend --update-env || \
+              pm2 start dist/main.js --name logistic-backend --max-memory-restart 512M --time
+            pm2 save
+
+            echo "✓ PROD deploy done ($(git rev-parse --short HEAD))"
+          EOF
