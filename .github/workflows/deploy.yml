@@ -46,8 +46,8 @@ jobs:
             echo "▶ Building NestJS..."
             npm run build
 
-            echo "▶ Reloading PM2..."
-            pm2 reload logistic-backend --update-env || \
+            echo "▶ Restarting PM2..."
+            pm2 restart logistic-backend --update-env || \
               pm2 start dist/main.js --name logistic-backend --max-memory-restart 512M --time
             pm2 save
 
