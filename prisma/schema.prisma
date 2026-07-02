@@ -20,6 +20,12 @@ model LogisticMessage {
   date              DateTime?
   views             Int?
 
+  // Bitta uzun Telegram habardan bir nechta yuk ajratib olinganda,
+  // har bir yuk alohida row sifatida saqlanadi. blockIndex shu bo'lakning
+  // habar ichidagi tartib raqami (0 = birinchi yuk, 1 = ikkinchi, ...).
+  // Qisqa habarlarda (oddiy bitta yuk) blockIndex = 0.
+  blockIndex        Int        @default(0)
+
   aiStatus          String     // "LOAD_POST" | "REGULAR_MESSAGE"
   structured        Json?
   normalized        Json?
@@ -51,8 +57,15 @@ model LogisticMessage {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
+  // NOTE: No DB-level unique constraint on (tgMessageId, channelName,
+  // blockIndex). Application-level dedup in PostsService.create
+  // (findFirst by tgMessageId+channelName) is the source of truth.
+  // Reason: dispatcher posts all share the sentinel pair
+  // (tgMessageId=0, channelName='DISPATCHER') by design, which would
+  // collide with any unique constraint covering those columns.
   @@index([source])
   @@index([createdById])
+  @@index([tgMessageId, channelName])
 }
 
 model TelegramGroup {

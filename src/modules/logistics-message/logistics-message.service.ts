@@ -67,6 +67,10 @@ export class PostsService {
       // -------------------------------------------------------------------
       // STEP 2 — duplicate check by (tgMessageId, channelName)
       // -------------------------------------------------------------------
+      // Multi-load tarmog'ida bitta tgMessageId ostida N ta row saqlanadi
+      // (har yuk uchun bittadan, blockIndex bilan farqlanadi). Shu sababli
+      // har qanday (tgMessageId, channelName) topilishi — butun habar
+      // allaqachon ishlangan degani, demak hammasini skip qilamiz.
       this.logger.debug(`${tag} STEP 2 dup-check (tgMessageId+channel)`);
       const existing = await this.prisma.logisticMessage.findFirst({
         where: { tgMessageId, channelName },
@@ -120,21 +124,195 @@ export class PostsService {
         message: text,
       });
       this.logger.log(
-        `${tag} STEP 4 openai isLoad=${openaiResponse.classifieredMessage.isLoad} type=${openaiResponse.classifieredMessage.type} confidence=${openaiResponse.classifieredMessage.confidence ?? '-'}`
+        `${tag} STEP 4 openai isMulti=${!!openaiResponse?.isMulti} isLoad=${openaiResponse.classifieredMessage.isLoad} type=${openaiResponse.classifieredMessage.type} confidence=${openaiResponse.classifieredMessage.confidence ?? '-'}`
       );
 
       // -------------------------------------------------------------------
-      // STEP 5 — phone gate (load must carry a phone number)
+      // STEP 5 — MULTI-LOAD tarmog'i (text.length > 400)
+      // -------------------------------------------------------------------
+      if (openaiResponse?.isMulti) {
+        const loads: any[] = Array.isArray(openaiResponse.loads)
+          ? openaiResponse.loads
+          : [];
+
+        // GPT 0 yuk qaytarsa — bitta REGULAR_MESSAGE row sifatida saqlaymiz
+        // (tgMessageId bilan dedup ushlanishi uchun).
+        if (loads.length === 0) {
+          this.logger.warn(
+            `${tag} STEP 5 MULTI 0 ta yuk — REGULAR_MESSAGE saqlanmoqda`
+          );
+          const saved = await this.prisma.logisticMessage.create({
+            data: {
+              tgMessageId,
+              channelName,
+              text,
+              date,
+              views,
+              blockIndex: 0,
+              aiStatus: 'REGULAR_MESSAGE',
+              structured: openaiResponse,
+              sentToTelegramAt: new Date(),
+            },
+          });
+          this.logger.log(
+            `${tag} DONE (multi-empty) id=${saved.id} in ${elapsed()}`
+          );
+          return {
+            saved: true,
+            multi: true,
+            count: 1,
+            ids: [saved.id],
+          };
+        }
+
+        // Bo'shliqsiz telefonlarni "primary phone" sifatida aniqlash —
+        // GPT prompt allaqachon inherit qilishni so'ragan, lekin model qaramoqada
+        // tashlab qo'ysa ham, biz fallback sifatida shu yerda ham to'ldiramiz.
+        const primaryPhone = this.findPrimaryPhone(text);
+
+        const savedIds: number[] = [];
+        for (let i = 0; i < loads.length; i++) {
+          const load = loads[i];
+          const subTag = `${tag}[block=${i}]`;
+
+          // Telefonni inherit qilish (agar bo'lakda yo'q bo'lsa).
+          let phone: string | null = load?.metaData?.phone_number ?? null;
+          if (
+            (typeof phone !== 'string' || phone.trim().length === 0) &&
+            primaryPhone
+          ) {
+            phone = primaryPhone;
+            this.logger.debug(
+              `${subTag} STEP 5 phone inherited from primary=${primaryPhone}`
+            );
+          }
+
+          const hasPhone =
+            typeof phone === 'string' && phone.trim().length > 0;
+          // Route gate: 4 ta maydonning barchasi (countryFrom, regionFrom,
+          // countryTo, regionTo) va telefon majburiy. Aks holda REGULAR_MESSAGE.
+          const isComplete = Boolean(
+            load?.route?.fromCountry &&
+              load?.route?.toCountry &&
+              load?.route?.fromRegion &&
+              load?.route?.toRegion
+          );
+          const effectiveIsLoad = hasPhone && isComplete;
+
+          this.logger.log(
+            `${subTag} route from=${load?.route?.fromCountry ?? '?'}/${load?.route?.fromRegion ?? '?'} to=${load?.route?.toCountry ?? '?'}/${load?.route?.toRegion ?? '?'} phone=${phone ?? '-'} isComplete=${isComplete} effLoad=${effectiveIsLoad}`
+          );
+
+          const baseRow: Prisma.LogisticMessageCreateInput = {
+            tgMessageId,
+            channelName,
+            text, // parent matn har row'da takrorlanadi (foydalanuvchi tasdiqlagan)
+            date,
+            views,
+            blockIndex: i,
+            aiStatus: effectiveIsLoad ? 'LOAD_POST' : 'REGULAR_MESSAGE',
+            structured: { isMulti: true, blockIndex: i, ...load },
+            sentToTelegramAt: new Date(),
+          };
+
+          const fullRow: Prisma.LogisticMessageCreateInput = effectiveIsLoad
+            ? {
+                ...baseRow,
+                countryFrom: load?.route?.fromCountry,
+                countryTo: load?.route?.toCountry,
+                regionFrom: load?.route?.fromRegion,
+                regionTo: load?.route?.toRegion,
+
+                title: load?.metaData?.title,
+                weight:
+                  load?.metaData?.weight != null &&
+                  !isNaN(Number(load.metaData.weight))
+                    ? Number(load.metaData.weight)
+                    : undefined,
+                cargoUnit: load?.metaData?.cargoUnit,
+                vehicleType: load?.metaData?.vehicleType,
+
+                paymentType: load?.metaData?.paymentType,
+                paymentAmount:
+                  load?.metaData?.paymentAmount != null &&
+                  !isNaN(Number(load.metaData.paymentAmount))
+                    ? Number(load.metaData.paymentAmount)
+                    : undefined,
+                advancePayment:
+                  load?.metaData?.advancePayment != null &&
+                  !isNaN(Number(load.metaData.advancePayment))
+                    ? Number(load.metaData.advancePayment)
+                    : undefined,
+                paymentCurrency: load?.metaData?.paymentCurrency,
+
+                pickupDate: await this.normalizePickupDate(
+                  load?.metaData?.pickupDate
+                ),
+
+                phoneNumber: phone,
+                isComplete,
+              }
+            : baseRow;
+
+          const savedRow = await this.prisma.logisticMessage.create({
+            data: fullRow,
+          });
+          savedIds.push(savedRow.id);
+          this.logger.log(
+            `${subTag} SAVED id=${savedRow.id} aiStatus=${savedRow.aiStatus}`
+          );
+
+          // Telegram alert har bo'lak uchun — single tarmog'i bilan bir xil
+          // mantiq (incomplete → 17906, complete → 17903).
+          if (effectiveIsLoad) {
+            await this.sendLoadAlert({
+              text,
+              route: load?.route ?? {},
+              metaData: { ...(load?.metaData ?? {}), phone_number: phone },
+              isComplete,
+              tag: subTag,
+            });
+          }
+        }
+
+        this.logger.log(
+          `${tag} DONE (multi) ${savedIds.length} ta row saqlandi in ${elapsed()}`
+        );
+        return {
+          saved: true,
+          multi: true,
+          count: savedIds.length,
+          ids: savedIds,
+        };
+      }
+
+      // -------------------------------------------------------------------
+      // STEP 5 — SINGLE tarmog'i (text.length <= 400) — phone + full route gate
       // -------------------------------------------------------------------
       const rawPhone = openaiResponse?.metaData?.phone_number;
       const hasPhone =
         typeof rawPhone === 'string' && rawPhone.trim().length > 0;
+      // Route gate: 4 ta maydonning barchasi (countryFrom, regionFrom,
+      // countryTo, regionTo) va telefon majburiy. Aks holda REGULAR_MESSAGE.
+      const isComplete = Boolean(
+        openaiResponse?.route?.fromCountry &&
+          openaiResponse?.route?.toCountry &&
+          openaiResponse?.route?.fromRegion &&
+          openaiResponse?.route?.toRegion
+      );
       const effectiveIsLoad =
-        openaiResponse.classifieredMessage.isLoad && hasPhone;
+        openaiResponse.classifieredMessage.isLoad && hasPhone && isComplete;
 
       if (openaiResponse.classifieredMessage.isLoad && !hasPhone) {
         this.logger.warn(
           `${tag} STEP 5 NO phone — downgrading LOAD_POST → REGULAR_MESSAGE`
+        );
+      } else if (
+        openaiResponse.classifieredMessage.isLoad &&
+        !isComplete
+      ) {
+        this.logger.warn(
+          `${tag} STEP 5 route incomplete (from=${openaiResponse?.route?.fromCountry ?? '?'}/${openaiResponse?.route?.fromRegion ?? '?'} to=${openaiResponse?.route?.toCountry ?? '?'}/${openaiResponse?.route?.toRegion ?? '?'}) — downgrading LOAD_POST → REGULAR_MESSAGE`
         );
       } else if (effectiveIsLoad) {
         this.logger.log(
@@ -150,20 +328,15 @@ export class PostsService {
         text,
         date,
         views,
+        blockIndex: 0,
         aiStatus: effectiveIsLoad ? 'LOAD_POST' : 'REGULAR_MESSAGE',
         structured: openaiResponse,
         sentToTelegramAt: new Date(),
       };
 
       // -------------------------------------------------------------------
-      // STEP 6 — route completeness
+      // STEP 6 — route log (isComplete allaqachon STEP 5 da hisoblangan)
       // -------------------------------------------------------------------
-      const isComplete = Boolean(
-        openaiResponse?.route?.fromCountry &&
-        openaiResponse?.route?.toCountry &&
-        openaiResponse?.route?.fromRegion &&
-        openaiResponse?.route?.toRegion
-      );
       if (effectiveIsLoad) {
         this.logger.log(
           `${tag} STEP 6 route from=${openaiResponse?.route?.fromCountry ?? '?'}/${openaiResponse?.route?.fromRegion ?? '?'} to=${openaiResponse?.route?.toCountry ?? '?'}/${openaiResponse?.route?.toRegion ?? '?'} isComplete=${isComplete}`
@@ -226,108 +399,14 @@ export class PostsService {
       // -------------------------------------------------------------------
       // STEP 8 — Telegram alert (only for effective loads)
       // -------------------------------------------------------------------
-      if (!isComplete && effectiveIsLoad) {
-        this.logger.warn(
-          `${tag} STEP 8 telegram alert → topic=17906 (incomplete load)`
-        );
-
-        const incompleteMessageText = `
-*Asl xabar:*
-\`\`\`
-${text}
-\`\`\`
-
-*Aniqlangan ma'lumotlar:*
-\`\`\`
-• From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
-• From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
-• To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
-• To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
-• title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
-• weight: ${openaiResponse?.metaData?.weight != null &&
-            !isNaN(Number(openaiResponse.metaData.weight))
-            ? `${Number(openaiResponse.metaData.weight)}`
-            : '❌ yo‘q'
-          }
-• cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
-• vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
-• paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
-• paymentAmount: ${openaiResponse?.metaData?.paymentAmount != null &&
-            !isNaN(Number(openaiResponse.metaData.paymentAmount))
-            ? Number(openaiResponse.metaData.paymentAmount)
-            : '❌ yo‘q'
-          }
-• advancePayment: ${openaiResponse?.metaData?.advancePayment != null &&
-            !isNaN(Number(openaiResponse.metaData.advancePayment))
-            ? Number(openaiResponse.metaData.advancePayment)
-            : '❌ yo‘q'
-          }
-• paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
-• pickupDate: ${openaiResponse?.metaData?.pickupDate
-            ? openaiResponse.metaData.pickupDate
-            : '❌ yo‘q'
-          }
-• phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
-
-\`\`\`
-`;
-
-        await this.telegramService.sendToGroup(incompleteMessageText, 17906, {
-          parseMode: 'Markdown',
+      if (effectiveIsLoad) {
+        await this.sendLoadAlert({
+          text,
+          route: openaiResponse?.route ?? {},
+          metaData: openaiResponse?.metaData ?? {},
+          isComplete,
+          tag,
         });
-        this.logger.debug(`${tag} STEP 8 telegram alert sent (incomplete)`);
-      }
-
-      if (isComplete && effectiveIsLoad) {
-        this.logger.warn(
-          `${tag} STEP 8 telegram alert → topic=17903 (complete load)`
-        );
-
-        const completeMessageText = `
-*Asl xabar:*
-\`\`\`
-${text}
-\`\`\`
-
-*Aniqlangan ma'lumotlar:*
-\`\`\`
-• From country: ${openaiResponse?.route?.fromCountry ?? '❌ yo‘q'}
-• From region: ${openaiResponse?.route?.fromRegion ?? '❌ yo‘q'}
-• To country: ${openaiResponse?.route?.toCountry ?? '❌ yo‘q'}
-• To region: ${openaiResponse?.route?.toRegion ?? '❌ yo‘q'}
-• title: ${openaiResponse?.metaData?.title ?? '❌ yo‘q'}
-• weight: ${openaiResponse?.metaData?.weight != null &&
-            !isNaN(Number(openaiResponse.metaData.weight))
-            ? `${Number(openaiResponse.metaData.weight)}`
-            : '❌ yo‘q'
-          }
-• cargoUnit: ${openaiResponse?.metaData?.cargoUnit ?? '❌ yo‘q'}
-• vehicleType: ${openaiResponse?.metaData?.vehicleType ?? '❌ yo‘q'}
-• paymentType: ${openaiResponse?.metaData?.paymentType ?? '❌ yo‘q'}
-• paymentAmount: ${openaiResponse?.metaData?.paymentAmount != null &&
-            !isNaN(Number(openaiResponse.metaData.paymentAmount))
-            ? Number(openaiResponse.metaData.paymentAmount)
-            : '❌ yo‘q'
-          }
-• advancePayment: ${openaiResponse?.metaData?.advancePayment != null &&
-            !isNaN(Number(openaiResponse.metaData.advancePayment))
-            ? Number(openaiResponse.metaData.advancePayment)
-            : '❌ yo‘q'
-          }
-• paymentCurrency: ${openaiResponse?.metaData?.paymentCurrency ?? '❌ yo‘q'}
-• pickupDate: ${openaiResponse?.metaData?.pickupDate
-            ? openaiResponse.metaData.pickupDate
-            : '❌ yo‘q'
-          }
-• phone_number: ${openaiResponse?.metaData?.phone_number ?? '❌ yo‘q'}
-
-\`\`\`
-`;
-
-        await this.telegramService.sendToGroup(completeMessageText, 17903, {
-          parseMode: 'Markdown',
-        });
-        this.logger.debug(`${tag} STEP 8 telegram alert sent (complete)`);
       }
 
       this.logger.log(
@@ -341,6 +420,88 @@ ${text}
       );
       throw error;
     }
+  }
+
+  /**
+   * Habarda topilgan birinchi telefon raqamini ajratib oladi.
+   * Multi-load tarmog'ida bo'lakda telefon yo'q bo'lsa, butun habardagi
+   * yagona/asosiy telefonni inherit qilish uchun ishlatiladi.
+   * Format: O'zbekiston operatorlari (+998..., 998..., yoki 9 raqamli local).
+   */
+  private findPrimaryPhone(text: string): string | null {
+    if (!text) return null;
+    const re =
+      /(?:\+?998)?\s?(?:9[0-9]|88|99|97|93|94|95|91|90|33|77|50|20)\s?\d{3}\s?\d{2}\s?\d{2}/g;
+    const match = text.match(re);
+    if (!match || match.length === 0) return null;
+    // Normallashtirish: bo'shliqlarni olib tashlash + +998 prefix
+    let phone = match[0].replace(/\s+/g, '');
+    if (!phone.startsWith('+')) {
+      if (phone.startsWith('998')) phone = '+' + phone;
+      else phone = '+998' + phone;
+    }
+    return phone;
+  }
+
+  /**
+   * Bitta yuk uchun Telegram alert yuborish — incomplete bo'lsa topic 17906 ga,
+   * complete bo'lsa topic 17903 ga. Single va multi tarmoqlari uchun umumiy.
+   */
+  private async sendLoadAlert(params: {
+    text: string;
+    route: any;
+    metaData: any;
+    isComplete: boolean;
+    tag: string;
+  }) {
+    const { text, route, metaData, isComplete, tag } = params;
+    const topicId = isComplete ? 17903 : 17906;
+    const label = isComplete ? 'complete load' : 'incomplete load';
+
+    this.logger.warn(`${tag} telegram alert → topic=${topicId} (${label})`);
+
+    const messageText = `
+*Asl xabar:*
+\`\`\`
+${text}
+\`\`\`
+
+*Aniqlangan ma'lumotlar:*
+\`\`\`
+• From country: ${route?.fromCountry ?? '❌ yo‘q'}
+• From region: ${route?.fromRegion ?? '❌ yo‘q'}
+• To country: ${route?.toCountry ?? '❌ yo‘q'}
+• To region: ${route?.toRegion ?? '❌ yo‘q'}
+• title: ${metaData?.title ?? '❌ yo‘q'}
+• weight: ${
+      metaData?.weight != null && !isNaN(Number(metaData.weight))
+        ? `${Number(metaData.weight)}`
+        : '❌ yo‘q'
+    }
+• cargoUnit: ${metaData?.cargoUnit ?? '❌ yo‘q'}
+• vehicleType: ${metaData?.vehicleType ?? '❌ yo‘q'}
+• paymentType: ${metaData?.paymentType ?? '❌ yo‘q'}
+• paymentAmount: ${
+      metaData?.paymentAmount != null && !isNaN(Number(metaData.paymentAmount))
+        ? Number(metaData.paymentAmount)
+        : '❌ yo‘q'
+    }
+• advancePayment: ${
+      metaData?.advancePayment != null && !isNaN(Number(metaData.advancePayment))
+        ? Number(metaData.advancePayment)
+        : '❌ yo‘q'
+    }
+• paymentCurrency: ${metaData?.paymentCurrency ?? '❌ yo‘q'}
+• pickupDate: ${metaData?.pickupDate ? metaData.pickupDate : '❌ yo‘q'}
+• phone_number: ${metaData?.phone_number ?? '❌ yo‘q'}
+
+\`\`\`
+`;
+
+    await this.telegramService.sendToGroup(messageText, topicId, {
+      parseMode: 'Markdown',
+    });
+    this.logger.debug(`${tag} telegram alert sent (${label})`);
   }
 
   async getAllMessages(params?: GetLogisticsMessagesDto) {
@@ -747,6 +908,10 @@ ${text}
    * (same as `create()` does for scraped posts) BUT do not persist anything.
    * Returns a structured payload shaped to drop straight into the body of
    * POST /v1/post/send-to-telegram so the dispatcher can review / edit / send.
+   *
+   * Single-load javob: { isLoad, isMulti:false, aiStatus, isComplete, hasPhone, data }
+   * Multi-load javob:  { isLoad, isMulti:true,  count, items:[{blockIndex, ...data}] }
+   * MULTI tarmog'iga (text.length > 400) mos ravishda parseMessageMulti() delegat qiladi.
    */
   async parseMessage(text: string, dispatcherId?: number) {
     const tag = `[parseMessage caller=${dispatcherId ?? '-'}]`;
@@ -758,6 +923,11 @@ ${text}
     const openaiResponse = await this.openaiService.messageAnalyse({
       message: text,
     });
+
+    if (openaiResponse?.isMulti) {
+      return this.parseMessageMulti(text, openaiResponse, tag, elapsed);
+    }
+
     this.logger.log(
       `${tag} STEP 2 openai isLoad=${openaiResponse.classifieredMessage.isLoad} type=${openaiResponse.classifieredMessage.type} confidence=${openaiResponse.classifieredMessage.confidence ?? '-'}`
     );
@@ -765,15 +935,16 @@ ${text}
     const rawPhone = openaiResponse?.metaData?.phone_number;
     const hasPhone =
       typeof rawPhone === 'string' && rawPhone.trim().length > 0;
-    const effectiveIsLoad =
-      openaiResponse.classifieredMessage.isLoad && hasPhone;
-
+    // Route gate: 4 ta maydonning barchasi (countryFrom, regionFrom,
+    // countryTo, regionTo) va telefon majburiy. Aks holda REGULAR_MESSAGE.
     const isComplete = Boolean(
       openaiResponse?.route?.fromCountry &&
         openaiResponse?.route?.toCountry &&
         openaiResponse?.route?.fromRegion &&
         openaiResponse?.route?.toRegion
     );
+    const effectiveIsLoad =
+      openaiResponse.classifieredMessage.isLoad && hasPhone && isComplete;
 
     // Translate indexed dictionary keys (e.g. "uzbekistan", "tashkent_city")
     // back to display names so the response can be dropped straight into
@@ -843,10 +1014,145 @@ ${text}
 
     return {
       isLoad: effectiveIsLoad,
+      isMulti: false,
       aiStatus: effectiveIsLoad ? 'LOAD_POST' : 'REGULAR_MESSAGE',
       isComplete,
       hasPhone,
       data,
+    };
+  }
+
+  /**
+   * Multi-load javob (isMulti=true) uchun parseMessage() delegat qiladigan metod.
+   * Har bir yuk uchun alohida `data` obyekti qaytaradi — SendTelegramStructuredDto
+   * shakliga mos, ya'ni frontend har bir elementni to'g'ridan-to'g'ri
+   * POST /v1/post/send-to-telegram ga yubora oladi.
+   *
+   * Telefon inherit qilish `create()` bilan bir xil: bo'lakda telefon yo'q bo'lsa
+   * — butun matndagi birinchi telefon raqami qo'shiladi.
+   */
+  private async parseMessageMulti(
+    text: string,
+    openaiResponse: any,
+    tag: string,
+    elapsed: () => string
+  ) {
+    const loads: any[] = Array.isArray(openaiResponse?.loads)
+      ? openaiResponse.loads
+      : [];
+
+    this.logger.log(
+      `${tag} STEP 2 MULTI loads_count=${loads.length} type=${openaiResponse?.classifieredMessage?.type ?? '-'}`
+    );
+
+    if (loads.length === 0) {
+      this.logger.warn(`${tag} MULTI 0 ta yuk — bo'sh items qaytmoqda`);
+      return {
+        isLoad: false,
+        isMulti: true,
+        count: 0,
+        items: [],
+      };
+    }
+
+    const primaryPhone = this.findPrimaryPhone(text);
+
+    const items = await Promise.all(
+      loads.map(async (load: any, i: number) => {
+        // Telefonni inherit qilish (create() bilan bir xil mantiq)
+        let phone: string | null = load?.metaData?.phone_number ?? null;
+        if (
+          (typeof phone !== 'string' || phone.trim().length === 0) &&
+          primaryPhone
+        ) {
+          phone = primaryPhone;
+        }
+        const hasPhone =
+          typeof phone === 'string' && phone.trim().length > 0;
+        // Route gate: 4 ta maydonning barchasi (countryFrom, regionFrom,
+        // countryTo, regionTo) va telefon majburiy. Aks holda REGULAR_MESSAGE.
+        const isComplete = Boolean(
+          load?.route?.fromCountry &&
+            load?.route?.toCountry &&
+            load?.route?.fromRegion &&
+            load?.route?.toRegion
+        );
+        const effectiveIsLoad = hasPhone && isComplete;
+
+        const [countryFromName, countryToName, regionFromInfo, regionToInfo] =
+          await Promise.all([
+            this.getCountryNameByIndexedName(
+              routeData,
+              load?.route?.fromCountry
+            ),
+            this.getCountryNameByIndexedName(
+              routeData,
+              load?.route?.toCountry
+            ),
+            this.getRegionInfoByIndexedName(
+              routeData,
+              load?.route?.fromRegion
+            ),
+            this.getRegionInfoByIndexedName(
+              routeData,
+              load?.route?.toRegion
+            ),
+          ]);
+
+        const normalizedPickup = await this.normalizePickupDate(
+          load?.metaData?.pickupDate
+        );
+
+        const data = {
+          countryFrom: load?.route?.fromCountry ?? null,
+          countryFromName: countryFromName ?? null,
+          regionFrom: load?.route?.fromRegion ?? null,
+          regionFromName: regionFromInfo?.regionName ?? null,
+          countryTo: load?.route?.toCountry ?? null,
+          countryToName: countryToName ?? null,
+          regionTo: load?.route?.toRegion ?? null,
+          regionToName: regionToInfo?.regionName ?? null,
+
+          title: load?.metaData?.title ?? null,
+          weight: load?.metaData?.weight ?? null,
+          cargoUnit: load?.metaData?.cargoUnit ?? null,
+          capacity: null,
+          vehicleType: load?.metaData?.vehicleType ?? null,
+          vehicleBodyType: null,
+
+          paymentType: load?.metaData?.paymentType ?? null,
+          paymentAmount: load?.metaData?.paymentAmount ?? null,
+          paymentCurrency: load?.metaData?.paymentCurrency ?? null,
+
+          pickupDate: normalizedPickup
+            ? normalizedPickup.toISOString().slice(0, 10)
+            : load?.metaData?.pickupDate ?? null,
+
+          phone_number: phone ?? null,
+          description: null,
+        };
+
+        return {
+          blockIndex: i,
+          isLoad: effectiveIsLoad,
+          aiStatus: effectiveIsLoad ? 'LOAD_POST' : 'REGULAR_MESSAGE',
+          isComplete,
+          hasPhone,
+          data,
+        };
+      })
+    );
+
+    const loadCount = items.filter((x) => x.isLoad).length;
+    this.logger.log(
+      `${tag} DONE MULTI ${items.length} items (${loadCount} effective loads) in ${elapsed()}`
+    );
+
+    return {
+      isLoad: loadCount > 0,
+      isMulti: true,
+      count: items.length,
+      items,
     };
   }
 

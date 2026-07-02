@@ -1,13 +1,21 @@
 import { CONFIG_OPENAI_TOKEN, OpenAIConfig } from '@/common/config/app.config';
 import { routeData } from '@/common/helpers/route-data';
 import { findRoute } from '@/common/utils/find-route';
-import { extractDataPrompt } from '@/common/utils/promts';
+import { extractDataPrompt, extractMultiDataPrompt } from '@/common/utils/promts';
 import { MessageAnalyseDto } from '@/types/openai';
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
+
+// Bo'lakli (multi-load) tarmoqqa o'tish chegarasi.
+// Bu qiymatdan kichik matnlar — hozirgi classifier + bitta yukli extractData
+// quvurini ishlatadi; kattalari — extractDataMulti() ga yo'naltiriladi.
+// classifier() ichidagi MAX_LENGTH bilan bir xil bo'lishi shart, aks holda
+// "uzun lekin multi-branch'ga kirmagan" oraliq paydo bo'ladi.
+const MULTI_LOAD_THRESHOLD = 400;
 // import { CONFIG_OPENAI_TOKEN, OpenAIConfig } from 'src/config/openai.config';
 @Injectable()
 export class OpenaiService {
+  private logger = new Logger(OpenaiService.name);
   private client: OpenAI;
   private model: string;
   constructor(
@@ -30,18 +38,61 @@ export class OpenaiService {
     return completion.choices[0].message.content;
   }
 
-  async messageAnalyse(message: MessageAnalyseDto): Promise<{
-    classifieredMessage: any;
-    route: any;
-    metaData: any;
-  }> {
-    const classifieredMessage = await this.classifier(message.message);
+  /**
+   * messageAnalyse — qaytarish shakli ikki xil bo'lishi mumkin:
+   *
+   *   SINGLE (text.length <= MULTI_LOAD_THRESHOLD):
+   *     { isMulti: false, classifieredMessage, route, metaData }
+   *
+   *   MULTI  (text.length > MULTI_LOAD_THRESHOLD):
+   *     { isMulti: true,  classifieredMessage, loads: [{ route, metaData }, ...] }
+   *
+   * PostsService.create — `isMulti` flag'iga qarab tarmoqlanadi.
+   */
+  async messageAnalyse(message: MessageAnalyseDto): Promise<any> {
+    const text = message.message ?? '';
 
-    if (!classifieredMessage.isLoad) {
-      return { classifieredMessage, route: null, metaData: null };
+    // -----------------------------------------------------------------
+    // MULTI-LOAD TARMOQ — uzun habarlar
+    // -----------------------------------------------------------------
+    // Bu yerda regex classifier'ni o'tkazib yuboramiz, chunki uning
+    // MAX_LENGTH=400 cheklovi har qanday batch habarni avtomatik rad etadi.
+    // O'rniga GPT'ga ishonamiz — u har bo'lakni o'zicha klassifikatsiya qiladi.
+    // -----------------------------------------------------------------
+    if (text.length > MULTI_LOAD_THRESHOLD) {
+      this.logger.log(
+        `[messageAnalyse] text_len=${text.length} > ${MULTI_LOAD_THRESHOLD} → multi-load branch`
+      );
+      const multi = await this.extractDataMulti(text);
+      const loadsCount = multi?.loads?.length ?? 0;
+
+      return {
+        isMulti: true,
+        classifieredMessage: {
+          isLoad: loadsCount > 0,
+          type: loadsCount > 0 ? 'MULTI_LOAD' : 'REGULAR_MESSAGE',
+          confidence: loadsCount,
+          originalText: text.substring(0, 50) + '...',
+        },
+        loads: multi.loads,
+      };
     }
 
-    const data = await this.extractData(message.message);
+    // -----------------------------------------------------------------
+    // SINGLE TARMOQ — hozirgi pipeline o'zgarmasdan
+    // -----------------------------------------------------------------
+    const classifieredMessage = await this.classifier(text);
+
+    if (!classifieredMessage.isLoad) {
+      return {
+        isMulti: false,
+        classifieredMessage,
+        route: null,
+        metaData: null,
+      };
+    }
+
+    const data = await this.extractData(text);
 
     // extractData can return:
     //  - null            (GPT returned from=null && to=null)
@@ -50,6 +101,7 @@ export class OpenaiService {
     // Guard every access so an OpenAI outage or unparseable text doesn't crash
     // the whole ingest pipeline.
     return {
+      isMulti: false,
       classifieredMessage,
       route: {
         fromCountry: data?.from?.country?.indexedName ?? null,
@@ -374,5 +426,89 @@ export class OpenaiService {
         phone_number: null,
       };
     }
+  }
+
+  /**
+   * Uzun habardan (MULTI_LOAD_THRESHOLD dan kotta) bir nechta yukni ajratib
+   * olish uchun GPT-4o-mini chaqiruvi. extractMultiDataPrompt prompt'i
+   * { loads: [...] } shaklida array qaytaradi; har bir element extractData
+   * qaytaradigan obyektga deyarli bir xil — faqat har bir yuk uchun.
+   *
+   * Qaytarish shakli (PostsService uchun mos):
+   *   {
+   *     loads: [
+   *       {
+   *         route: { fromCountry, toCountry, fromRegion, toRegion },
+   *         metaData: { title, weight, ... phone_number }
+   *       },
+   *       ...
+   *     ]
+   *   }
+   *
+   * Xatolik yoki bo'sh array bo'lsa — { loads: [] } qaytaradi.
+   */
+  async extractDataMulti(text: string): Promise<{ loads: any[] }> {
+    let rawResult: any;
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: extractMultiDataPrompt },
+          { role: 'user', content: text },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0,
+      });
+      rawResult = JSON.parse(completion.choices[0].message.content);
+    } catch (error) {
+      this.logger.error(
+        `[extractDataMulti] OpenAI/JSON xatosi: ${error?.message ?? error}`
+      );
+      return { loads: [] };
+    }
+
+    const rawLoads: any[] = Array.isArray(rawResult?.loads)
+      ? rawResult.loads
+      : [];
+
+    if (rawLoads.length === 0) {
+      this.logger.warn(`[extractDataMulti] GPT 0 ta yuk qaytardi`);
+      return { loads: [] };
+    }
+
+    // Har bir yukning from/to ni route dictionary'ga moslash —
+    // single tarmog'idagi findRoute() bilan bir xil mantiq.
+    const loads = await Promise.all(
+      rawLoads.map(async (raw: any) => {
+        if (raw == null || typeof raw !== 'object') {
+          return null;
+        }
+        const from = await findRoute(raw.from);
+        const to = await findRoute(raw.to);
+
+        return {
+          route: {
+            fromCountry: from?.country?.indexedName ?? null,
+            toCountry: to?.country?.indexedName ?? null,
+            fromRegion: from?.region?.indexedName ?? null,
+            toRegion: to?.region?.indexedName ?? null,
+          },
+          metaData: {
+            title: raw?.title ?? null,
+            weight: raw?.weight ?? null,
+            cargoUnit: raw?.cargoUnit ?? null,
+            vehicleType: raw?.vehicleType ?? null,
+            paymentType: raw?.paymentType ?? null,
+            paymentAmount: raw?.paymentAmount ?? null,
+            advancePayment: raw?.advancePayment ?? null,
+            paymentCurrency: raw?.paymentCurrency ?? null,
+            pickupDate: raw?.pickupDate ?? null,
+            phone_number: raw?.phone_number ?? null,
+          },
+        };
+      })
+    );
+
+    return { loads: loads.filter((l) => l !== null) };
   }
 }
